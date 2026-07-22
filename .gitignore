@@ -1,0 +1,39 @@
+# Python & System
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.DS_Store
+.serena/
+
+# Harness Runtime Data (Project Specific)
+# phases/ 는 프로젝트 진행 상태 SSOT — 추적 원하면 아래 줄 제거
+phases/
+.harness/
+data/
+logs/
+tmp/
+
+# Project Identity Documents
+# (These are example/template documents. Copy and customize for your project.)
+# docs/PRD.md
+# docs/ARCHITECTURE.md
+# docs/ADR.md
+# docs/UI_GUIDE.md
+# docs/service-scenario-catalog.md
+
+# Generated Artifacts & Reports
+*-output.json
+*.artifact.md
+final_integration_report.json
+test_report.json
+log_report.json
+
+# Harness Config
+# config.json
+
+# --- Harness Framework Standard (Must be tracked) ---
+!AGENTS.md
+!docs/HARNESS.md
+!docs/REVIEW.md
+!.claude/settings.json
+!.gemini/settings.json
