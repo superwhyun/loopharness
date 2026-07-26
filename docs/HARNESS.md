@@ -148,6 +148,12 @@ git tag {project}-phase{N}-done
 로컬 LLM(원격 IP) 연결은 `config.json`의 `local_api` 타입 백엔드로 설정한다.
 OpenCode, Cursor 등 에이전트 IDE에서 로컬 LLM을 연결하면 `/loop` 커맨드를 그대로 사용할 수 있다.
 
+### 설계 자기검토
+
+새 phase와 그 안의 step을 설계할 때는 초안을 만든 뒤 기본 5회의 자기검토를 수행한다.
+각 검토에서는 누락된 요구사항, 목표·성공 기준 충족 여부, 모듈 경계와 의존성, 실행 가능한 AC, 범위·세션 연속성을 차례로 다시 확인하고 완전한 수정안을 만든다.
+`scripts/loop.py`의 Planner와 `/loop` 에이전트 워크플로우 모두 이 규칙을 따른다.
+
 ## CRITICAL: phases/ 보호 규칙
 
 `phases/` 디렉터리는 프로젝트의 구현 계획과 진행 상태를 담는 SSOT다.

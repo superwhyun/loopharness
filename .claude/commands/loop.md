@@ -61,6 +61,7 @@
 없으면 에이전트가 다음 phase를 직접 설계한다:
 - `goal.json`, `phases/project-manifest.json` (있으면), 완료된 phase baseline 내용을 참고
 - `docs/HARNESS.md` 섹션 C (Step 설계)의 규칙을 따른다
+- 초안을 만든 뒤 아래 관점으로 기본 5회 자기검토한다: 누락 요구사항, 성공 기준 충족, 모듈 경계·의존성, 실행 가능한 AC, 범위와 다음 세션 연속성. 매 회 완전한 수정안을 만든다.
 - `python3 scripts/scaffold_phase.py {phase-dir} --project {name} --steps step1 step2 ...` 로 파일 생성
 - 사용자에게 phase 계획을 간단히 요약하고 승인을 받는다
 
