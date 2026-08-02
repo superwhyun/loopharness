@@ -44,8 +44,7 @@ Claude Code, Antigravity CLI (agy), Kimi Code CLI에서도 이 파일 내용을 
 
 기본 사용 방식은 "프레임워크를 한 번 설치해두고(`skills/harness/`), 대상 프로젝트를 열 때마다 그 스킬이 자동 로드된 상태에서 작업"이다. 대상 프로젝트를 이 저장소를 클론해서 만들 필요는 없다.
 
-- Claude Code / Kimi Code CLI / Codex: 이 저장소를 `~/.agents/skills/harness`에 clone하고 `install.sh`를 실행하면 `~/.claude/skills/harness`, `~/.kimi/skills/harness`, `~/.codex/skills/harness`가 그 클론의 `skills/harness/`로 심볼릭 링크된다. 어떤 프로젝트 디렉터리에서 열어도 스킬이 자동 로드된다. canonical 내용은 `skills/harness/SKILL.md`와 `skills/harness/framework/docs/HARNESS.md`다.
-- Antigravity CLI (agy): `GEMINI.md` 또는 `.agy/settings.json`으로 `AGENTS.md`를 컨텍스트 파일로 읽고, `.agy/commands/`를 프로젝트 명령으로 사용한다. (전역 스킬 디렉터리 컨벤션 미검증 — 수동 확인 필요)
+- Claude Code / Kimi Code CLI / Codex / Antigravity (agy·AGY CLI·AGY IDE): 이 저장소를 `~/.agents/skills/harness`에 clone하고 `install.sh`를 실행하면 `~/.claude/skills/harness`, `~/.kimi/skills/harness`, `~/.codex/skills/harness`, `~/.gemini/config/skills/harness`가 그 클론의 `skills/harness/`로 심볼릭 링크된다. 어떤 프로젝트 디렉터리에서 열어도 스킬이 자동 로드된다. canonical 내용은 `skills/harness/SKILL.md`와 `skills/harness/framework/docs/HARNESS.md`다. (`~/.gemini/config/skills/`는 agy/AGY CLI/AGY IDE 세 변형 모두가 공통으로 인식하는 것으로 실측 확인된 전역 스킬 경로다.)
 
 이 저장소 자체는 프레임워크 소스이며 `phases/`를 갖는 프로젝트 인스턴스가 아니다. `skills/harness/framework/scripts/execute.py`는 배치형 실행기일 뿐, 인터랙티브 사용에서 매번 직접 실행해야 하는 필수 진입점이 아니다.
 

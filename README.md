@@ -17,13 +17,11 @@ cd ~/.agents/skills/harness
 bash install.sh
 ```
 
-`install.sh`는 `~/.claude/skills/harness`, `~/.kimi/skills/harness`, `~/.codex/skills/harness`를 이 클론의 `skills/harness/`로 symlink 합니다. 이후 어떤 프로젝트 디렉터리를 열어도 harness 스킬이 자동 로드됩니다.
+`install.sh`는 `~/.claude/skills/harness`, `~/.kimi/skills/harness`, `~/.codex/skills/harness`, `~/.gemini/config/skills/harness`를 이 클론의 `skills/harness/`로 symlink 합니다. 이후 어떤 프로젝트 디렉터리를 열어도 harness 스킬이 자동 로드됩니다 (`~/.gemini/config/skills/`는 Antigravity agy/AGY CLI/AGY IDE 세 변형 모두가 공통으로 인식하는 전역 스킬 경로입니다).
 
 **업데이트**는 `~/.agents/skills/harness`에서 `git pull` 한 번이면 됩니다. symlink이므로 재설치가 필요 없습니다.
 
 > **클론 디렉터리(`~/.agents/skills/harness`)는 지우면 안 됩니다.** 심볼릭 링크가 가리키는 실제 원본입니다.
-
-> Antigravity CLI(agy)처럼 유저 레벨 스킬 디렉터리 컨벤션이 없는 툴은 대상 프로젝트에 `.agy/commands/`, `AGENTS.md` 등을 직접 구성해야 합니다. 자세한 내용은 `AGENTS.md`의 "인터랙티브 사용 방식" 참고.
 
 ---
 
