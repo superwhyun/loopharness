@@ -6,7 +6,7 @@
 프레임워크 저장소를 대상 프로젝트마다 클론하지 않는다.
 
 ```bash
-git clone <repo-url> ~/harness-framework
+git clone https://github.com/superwhyun/skill-harness.git ~/harness-framework
 cd ~/harness-framework
 bash install.sh
 # ~/.agents/skills/harness 가 이 저장소의 skills/harness/ 를 가리키는

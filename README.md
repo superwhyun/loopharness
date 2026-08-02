@@ -11,7 +11,7 @@
 프레임워크는 프로젝트마다 clone하지 않고, **한 곳에 설치해서 스킬로 재사용**합니다.
 
 ```bash
-git clone <repo-url> ~/harness-framework
+git clone https://github.com/superwhyun/skill-harness.git ~/harness-framework
 cd ~/harness-framework
 bash install.sh
 ```
