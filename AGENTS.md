@@ -27,13 +27,14 @@ Claude Code, Antigravity CLI (agy), Kimi Code CLI에서도 이 파일 내용을 
 ## 문서 우선순위
 
 작업 전에는 아래 순서로 읽는다. 세션당 1회만 읽는다.
+(`skills/harness/framework/`로 표시된 항목은 프레임워크 자체의 고정 문서다. 대상 프로젝트 상태 파일은 프로젝트 루트 기준 그대로 읽는다.)
 
 1. `AGENTS.md`
-2. `docs/HARNESS.md`
-3. `docs/ARCHITECTURE.md`
-4. `docs/modules/registry.json` (있으면) — 현재 모듈 상태 파악
-5. `docs/ADR.md`
-6. `phases/project-manifest.json` (있으면) — 전체 프로젝트 누적 현황
+2. `skills/harness/framework/docs/HARNESS.md`
+3. `skills/harness/framework/docs/ARCHITECTURE.md`
+4. `docs/modules/registry.json` (대상 프로젝트에 있으면) — 현재 모듈 상태 파악
+5. `skills/harness/framework/docs/ADR.md`
+6. `phases/project-manifest.json` (대상 프로젝트에 있으면) — 전체 프로젝트 누적 현황
 7. 현재 phase의 `phases/{task}/index.json`
 8. 현재 phase의 `phases/{task}/module-map.json` (있으면)
 9. `docs/modules/{해당 모듈}/MODULE.md` — module-map의 ref 확인 후 해당 모듈만
@@ -41,22 +42,21 @@ Claude Code, Antigravity CLI (agy), Kimi Code CLI에서도 이 파일 내용을 
 
 ## 인터랙티브 사용 방식
 
-이 저장소의 기본 사용 방식은 "리포를 툴에서 열고, 툴이 프로젝트 문서를 자동 로드한 상태에서 작업"이다.
+기본 사용 방식은 "프레임워크를 한 번 설치해두고(`skills/harness/`), 대상 프로젝트를 열 때마다 그 스킬이 자동 로드된 상태에서 작업"이다. 대상 프로젝트를 이 저장소를 클론해서 만들 필요는 없다.
 
-- Codex: `AGENTS.md`를 기준 규칙으로 사용한다.
-- Claude Code: `CLAUDE.md`와 `.claude/commands/`를 진입점으로 쓰되, canonical 내용은 `AGENTS.md`와 `docs/HARNESS.md`다.
-- Antigravity CLI (agy): `GEMINI.md` 또는 `.agy/settings.json`으로 `AGENTS.md`를 컨텍스트 파일로 읽고, `.agy/commands/`를 프로젝트 명령으로 사용한다.
-- Kimi Code CLI: `AGENTS.md`를 기본 프로젝트 규칙으로 읽고, `.kimi/skills/`의 project-level skills를 진입점으로 사용한다.
+- Claude Code / Kimi Code CLI: `install.sh`로 `~/.claude/skills/harness`, `~/.kimi/skills/harness` 에 이 저장소의 `skills/harness/`를 심볼릭 링크하면, 어떤 프로젝트 디렉터리에서 열어도 스킬이 자동 로드된다. canonical 내용은 `skills/harness/SKILL.md`와 `skills/harness/framework/docs/HARNESS.md`다.
+- Antigravity CLI (agy): `GEMINI.md` 또는 `.agy/settings.json`으로 `AGENTS.md`를 컨텍스트 파일로 읽고, `.agy/commands/`를 프로젝트 명령으로 사용한다. (전역 스킬 디렉터리 컨벤션 미검증 — 수동 확인 필요)
+- Codex: 전역 스킬 개념이 없으므로, 대상 프로젝트의 `AGENTS.md`에 이 프레임워크 경로(`~/harness-framework/skills/harness/framework`)를 안내하는 문구를 직접 추가해야 한다.
 
-`scripts/execute.py`는 배치형 실행기일 뿐, 인터랙티브 사용에서 매번 직접 실행해야 하는 필수 진입점이 아니다.
+이 저장소 자체는 프레임워크 소스이며 `phases/`를 갖는 프로젝트 인스턴스가 아니다. `skills/harness/framework/scripts/execute.py`는 배치형 실행기일 뿐, 인터랙티브 사용에서 매번 직접 실행해야 하는 필수 진입점이 아니다.
 
 ## Harness 워크플로우
 
 ### 0. 프로젝트 루트 확인
 
-이 저장소를 클론한 디렉터리가 곧 프로젝트 루트다.
-`phases/`, `src/`, `goal.json`은 모두 클론 루트 바로 아래에 위치한다.
-별도의 `projects/` 하위 디렉터리는 없다.
+대상 프로젝트 루트는 하네스 스킬을 실행하는 그 프로젝트 디렉터리다 (이 프레임워크 저장소가 아니다).
+`phases/`, `src/`, `goal.json`은 모두 대상 프로젝트 루트 바로 아래에 위치한다.
+`skills/harness/framework/scripts/*.py`는 `--root {대상 프로젝트 경로}`로 대상 프로젝트를 가리켜 실행한다.
 
 ### 1. 탐색
 
@@ -78,8 +78,8 @@ Claude Code, Antigravity CLI (agy), Kimi Code CLI에서도 이 파일 내용을 
 - contract가 틀려 현재 step을 완료할 수 없으면 현재 step을 `blocked`로 기록하고 `blocking-fix` 또는 `contract-change` step을 append한다. append된 blocking step은 즉시 우선 수행한다.
 - 현재 step을 막지 않는 개선사항은 현재 step을 완료한 뒤 phase 마지막에 `backlog-fix` step으로 append한다.
 - 이미 존재하는 step 번호를 재정렬하거나 renumbering 하지 않는다. 새 step은 항상 append한다.
-- 새 phase를 만들 때는 `scripts/scaffold_phase.py`를 사용한다. 클론 루트에서 실행하면 `--root` 없이 동작한다.
-- phase 파일을 생성하거나 크게 수정한 뒤에는 `scripts/validate_phase.py`로 형식을 검증한다.
+- 새 phase를 만들 때는 `skills/harness/framework/scripts/scaffold_phase.py --root {대상 프로젝트 경로}`를 사용한다.
+- phase 파일을 생성하거나 크게 수정한 뒤에는 `skills/harness/framework/scripts/validate_phase.py --root {대상 프로젝트 경로}`로 형식을 검증한다.
 
 ### 3. 실행
 
@@ -118,11 +118,11 @@ phase 완료 시 태그:
 git tag {project}-phase{N}-done
 ```
 
-자세한 내용은 `docs/HARNESS.md`의 "F. Git 커밋" 섹션을 참조한다.
+자세한 내용은 `skills/harness/framework/docs/HARNESS.md`의 "F. Git 커밋" 섹션을 참조한다.
 
 ## 모듈 페르소나 규칙
 
-모듈-페르소나 레이어에 대한 상세 규약은 `docs/MODULES.md`를 참조한다.
+모듈-페르소나 레이어에 대한 상세 규약은 `skills/harness/framework/docs/MODULES.md`를 참조한다.
 
 ### 핵심 원칙
 
@@ -150,10 +150,11 @@ git tag {project}-phase{N}-done
 
 ```bash
 # 새 모듈 생성
-python3 scripts/scaffold_module.py auth/token \
+python3 skills/harness/framework/scripts/scaffold_module.py auth/token \
   --project my-app \
   --persona "Token Manager" \
-  --parent auth
+  --parent auth \
+  --root {대상 프로젝트 경로}
 ```
 
 ## 상태 파일 규칙
@@ -263,4 +264,4 @@ scaffold를 다시 실행하지 마라.
 - Claude Code: `/harness`, `/review`
 - Antigravity CLI (agy): `/harness`, `/review`
 - Kimi Code CLI: `/skill:harness`, `/skill:review`
-- Codex: 별도 프로젝트 slash command는 전제하지 않는다. 대신 이 파일과 `docs/HARNESS.md`를 기준으로 사용자가 바로 작업을 요청하면 그 흐름을 따른다.
+- Codex: 별도 프로젝트 slash command는 전제하지 않는다. 대신 이 파일과 `skills/harness/framework/docs/HARNESS.md`를 기준으로 사용자가 바로 작업을 요청하면 그 흐름을 따른다.

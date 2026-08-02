@@ -6,10 +6,10 @@ description: Continue work in this repository using the canonical harness workfl
 Read these files first:
 
 - `AGENTS.md`
-- `docs/HARNESS.md`
-- `docs/PRD.md`
-- `docs/ARCHITECTURE.md`
-- `docs/ADR.md`
+- `skills/harness/framework/docs/HARNESS.md`
+- `skills/harness/framework/docs/ARCHITECTURE.md`
+- `skills/harness/framework/docs/ADR.md`
+- `docs/PRD.md` (target project's own, if present)
 
 Then inspect the current `phases/` state.
 

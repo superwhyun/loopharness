@@ -6,9 +6,9 @@ description: Review current changes in this repository using the canonical revie
 Read these files first:
 
 - `AGENTS.md`
-- `docs/REVIEW.md`
-- `docs/ARCHITECTURE.md`
-- `docs/ADR.md`
+- `skills/harness/framework/docs/REVIEW.md`
+- `skills/harness/framework/docs/ARCHITECTURE.md`
+- `skills/harness/framework/docs/ADR.md`
 
 Then inspect the current diff and produce a findings-first review.
 

@@ -4,10 +4,10 @@ Read the project instructions and run the harness workflow.
 
 Start with:
 - @{AGENTS.md}
-- @{docs/HARNESS.md}
-- @{docs/PRD.md}
-- @{docs/ARCHITECTURE.md}
-- @{docs/ADR.md}
+- @{skills/harness/framework/docs/HARNESS.md}
+- @{skills/harness/framework/docs/ARCHITECTURE.md}
+- @{skills/harness/framework/docs/ADR.md}
+- @{docs/PRD.md} (target project's own, if present)
 
 If there is an active phase, inspect the current files under `phases/` and continue from the first pending step.
 Target project resolution:

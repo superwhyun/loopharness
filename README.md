@@ -6,6 +6,24 @@
 
 ---
 
+## 🔧 설치 (한 번만)
+
+프레임워크는 프로젝트마다 clone하지 않고, **한 곳에 설치해서 스킬로 재사용**합니다.
+
+```bash
+git clone <repo-url> ~/harness-framework
+cd ~/harness-framework
+bash install.sh
+```
+
+`install.sh`는 `~/.claude/skills/harness`, `~/.kimi/skills/harness`를 이 클론의 `skills/harness/`로 symlink 합니다. 이후 어떤 프로젝트 디렉터리를 열어도 harness 스킬이 자동 로드됩니다.
+
+**업데이트**는 `~/harness-framework`에서 `git pull` 한 번이면 됩니다. symlink이므로 재설치가 필요 없습니다.
+
+> Antigravity CLI(agy)나 Codex처럼 유저 레벨 스킬 디렉터리 컨벤션이 없는 툴은 대상 프로젝트에 `.agy/commands/`, `AGENTS.md` 등을 직접 구성해야 합니다. 자세한 내용은 `AGENTS.md`의 "인터랙티브 사용 방식" 참고.
+
+---
+
 ## 🌟 핵심 패러다임
 
 ### 1. 계약 우선 개발 (Contract-first Development)
@@ -80,7 +98,7 @@
 
 ### 📦 Step 단위 커밋 정책
 * 커밋은 페이즈 단위가 아니라 **Step 단위**로 수행합니다.
-* **커밋 위치**: 프로젝트 루트(clone 루트)의 Git 저장소에서 실행합니다.
+* **커밋 위치**: 대상 프로젝트 루트의 Git 저장소에서 실행합니다.
 * **커밋 시점**: 해당 Step의 AC를 모두 만족하고 검증을 통과한 직후.
 * **커밋 메시지 규격 (Conventional Commits)**:
   ```text
@@ -116,16 +134,16 @@
 
 ```mermaid
 graph TD
-    A[1. AGENTS.md - Canonical Rules] --> B[2. docs/HARNESS.md - Workflow Specification]
-    B --> C[3. docs/ARCHITECTURE.md - Design Map]
-    C --> D[4. docs/ADR.md - Technical Decisions]
+    A[1. AGENTS.md - Canonical Rules] --> B[2. skills/harness/framework/docs/HARNESS.md - Workflow Specification]
+    B --> C[3. skills/harness/framework/docs/ARCHITECTURE.md - Design Map]
+    C --> D[4. skills/harness/framework/docs/ADR.md - Technical Decisions]
     D --> E[5. phases/project-manifest.json - Manifest Status]
     E --> F[6. phases/{task}/module-map.json - Module Contracts]
     F --> G[7. phases/{task}/stepN.md - Step Instruction]
 ```
 
 > [!NOTE]
-> 저장소의 절대적인 Canonical 표준 규칙은 **[AGENTS.md](file:///Users/whyun/workspace/harness_framework/AGENTS.md)**에 보존되며, 툴별 전용 설정 파일은 보조 수단으로만 기능합니다.
+> 저장소의 절대적인 Canonical 표준 규칙은 **[AGENTS.md](AGENTS.md)**에 보존되며, 툴별 전용 설정 파일은 보조 수단으로만 기능합니다. `phases/*` 항목은 프레임워크가 아니라 **대상 프로젝트** 루트를 기준으로 읽습니다.
 
 ---
 
@@ -163,28 +181,30 @@ Antigravity는 IDE 내부에 고도로 융합된 에이전트로, 전역 시스�
 
 ## 🚀 빠른 시작 및 스크립트 도구 레퍼런스
 
+아래 스크립트는 설치된 스킬 기준 `~/.claude/skills/harness/framework/scripts/`(또는 이 클론의 `skills/harness/framework/scripts/`)에 있으며, 항상 `--root {대상 프로젝트 경로}`로 대상 프로젝트를 가리켜 실행합니다.
+
 ### 1. 새 페이즈 뼈대 생성 (`scaffold_phase.py`)
 새로운 작업 페이즈를 설계하고 표준 스텝 파일 구조를 자동 생성합니다.
 ```bash
-python3 scripts/scaffold_phase.py {phase-dir} --project {name} --steps step1 step2
+python3 ~/.claude/skills/harness/framework/scripts/scaffold_phase.py {phase-dir} --project {name} --steps step1 step2 --root {대상 프로젝트 경로}
 ```
 
 ### 2. 페이즈 데이터 정합성 검증 (`validate_phase.py`)
 작성되거나 수정된 페이즈 인덱스, 모듈 맵, 스텝 문서 스키마의 무결성을 검증합니다.
 ```bash
-python3 scripts/validate_phase.py {phase-dir}
+python3 ~/.claude/skills/harness/framework/scripts/validate_phase.py {phase-dir} --root {대상 프로젝트 경로}
 ```
 
 ### 3. 백엔드 스모크 테스트 (`smoke_backends.py`)
 로컬 컴퓨터에 설치된 백엔드 CLI 툴(Claude, Gemini, Kimi 등)의 인터페이스 및 도움말 명세가 하네스 연동 규격에 맞는지 확인합니다.
 ```bash
-python3 scripts/smoke_backends.py
+python3 ~/.claude/skills/harness/framework/scripts/smoke_backends.py
 ```
 
 ### 4. 배치 비대화식 실행기 (`execute.py`)
 CI/CD 자동화 환경이나 로컬 배치 테스트 시 백엔드를 일괄 구동합니다. 일반적인 대화식 작업에서는 사용이 권장되지 않습니다.
 ```bash
-python3 scripts/execute.py 0-mvp --backend agy
+python3 ~/.claude/skills/harness/framework/scripts/execute.py 0-mvp --backend agy --root {대상 프로젝트 경로}
 ```
 
 > [!TIP]
@@ -195,26 +215,33 @@ python3 scripts/execute.py 0-mvp --backend agy
 ## 📁 디렉터리 구조 가이드
 
 ```text
-.
-├── AGENTS.md               # 전사 공통 코딩 에이전트 규칙 (Canonical Rules)
-├── CLAUDE.md               # Claude Code Supplement
-├── GEMINI.md               # Gemini / Antigravity Supplement
-├── config.json             # 백엔드 및 보안 옵션 설정
-├── docs/                   # 프레임워크 표준 지침 문서
-│   ├── HARNESS.md          # 하네스 스텝 및 세션 라이프사이클 명세
-│   ├── REVIEW.md           # 코드 품질 및 아키텍처 리뷰 표준 가이드
-│   ├── ARCHITECTURE.md     # 프레임워크 및 데이터 흐름 아키텍처
-│   └── ADR.md              # 아키텍처 주요 결정 이력
-├── scripts/                # 하네스 자동화 및 유틸리티 엔진 스크립트
-├── templates/              # scaffold 표준 마크다운 템플릿 소스
-└── phases/                 # 프로젝트 진행 상태를 기록하는 SSOT (clone 루트에 위치)
-    ├── index.json          # 페이즈 목록 및 상태
+harness-framework/           # 이 저장소 (프레임워크 소스, 한 곳에만 clone)
+├── AGENTS.md                # 전사 공통 코딩 에이전트 규칙 (Canonical Rules)
+├── CLAUDE.md                # Claude Code Supplement
+├── GEMINI.md                # Gemini / Antigravity Supplement
+├── install.sh               # skills/harness/ 를 유저 레벨 스킬로 symlink
+└── skills/harness/
+    ├── SKILL.md              # 스킬 진입점 (Claude Code / Kimi 공용)
+    └── framework/             # 번들 프레임워크 — 실제 배포되는 원본
+        ├── config.json        # 백엔드 및 보안 옵션 설정
+        ├── docs/               # 프레임워크 표준 지침 문서
+        │   ├── HARNESS.md      # 하네스 스텝 및 세션 라이프사이클 명세
+        │   ├── REVIEW.md       # 코드 품질 및 아키텍처 리뷰 표준 가이드
+        │   ├── ARCHITECTURE.md # 프레임워크 및 데이터 흐름 아키텍처
+        │   └── ADR.md          # 아키텍처 주요 결정 이력
+        ├── engine/             # 하네스 실행 엔진 (executor, backends, loop 컴포넌트)
+        ├── scripts/            # 하네스 자동화 및 유틸리티 스크립트
+        └── templates/          # scaffold 표준 마크다운 템플릿 소스
+
+대상-프로젝트/                 # 하네스 스킬로 작업하는 실제 프로젝트 (별도 디렉터리)
+└── phases/                  # 프로젝트 진행 상태를 기록하는 SSOT
+    ├── index.json           # 페이즈 목록 및 상태
     ├── project-manifest.json # 누적 프로젝트 매니페스트
-    ├── baselines/          # 완료 페이즈 아티팩트
+    ├── baselines/           # 완료 페이즈 아티팩트
     └── {phase-dir}/
-        ├── index.json      # 스텝 목록 및 상태
-        ├── module-map.json # 모듈 경계, 소유 step, contracts
-        └── stepN.md        # 개별 스텝 수행 지시서
+        ├── index.json       # 스텝 목록 및 상태
+        ├── module-map.json  # 모듈 경계, 소유 step, contracts
+        └── stepN.md         # 개별 스텝 수행 지시서
 ```
 
 ---

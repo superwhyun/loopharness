@@ -1,7 +1,7 @@
 # /loop — 자율 개발 루프
 
 이 커맨드는 AI 에이전트(Claude Code, OpenCode, Codex, Gemini 등)가 루프를 직접 오케스트레이션한다.
-`scripts/loop.py`는 에이전트 없이 완전 배치 실행할 때만 사용한다.
+`skills/harness/framework/scripts/loop.py`는 에이전트 없이 완전 배치 실행할 때만 사용한다.
 
 ---
 
@@ -9,7 +9,7 @@
 
 반드시 먼저 읽어라:
 1. `/AGENTS.md`
-2. `/docs/HARNESS.md`
+2. `/skills/harness/framework/docs/HARNESS.md`
 
 ---
 
@@ -60,12 +60,12 @@
 
 없으면 에이전트가 다음 phase를 직접 설계한다:
 - `goal.json`, `phases/project-manifest.json` (있으면), 완료된 phase baseline 내용을 참고
-- `docs/HARNESS.md` 섹션 C (Step 설계)의 규칙을 따른다
+- `skills/harness/framework/docs/HARNESS.md` 섹션 C (Step 설계)의 규칙을 따른다
 - phase 목록을 초안으로 만든 뒤 **판정 없이 무조건 5회 반복 재작성**한다.
 - **각 phase의 step 구성을 개별적으로 만들고, 그 phase의 step 설계만 5회 반복 재작성**한다. 다음 phase로 넘어가기 전에 현재 phase의 step이 5회 재점검을 마쳐야 한다.
 - **⚠️ 5회 재점검은 로그 기록만으로 충분하지 않다.** 매 회차마다 **실제 stepN.md 파일 내용이 실질적으로 개선**되어야 한다 (요구사항 명확화, AC 구체화, 차별점 반영, read_contracts/forbidden_paths 정합성, 검증 절차 보강). "유지" 또는 "로그만 기록"은 재작성이 아니다. 5회차 후 각 step 파일이 회차 1 대비 더 완성도 높고 실행 가능해야 한다.
 - 리뷰 통과 여부를 묻지 말고, 매 회차마다 이전 버전 전체를 재검토하고 완전한 수정안으로 다시 작성한다. 관점: 누락 요구사항, 성공 기준 충족, 모듈 경계·의존성, 실행 가능한 AC, 범위와 다음 세션 연속성. 5회차 산출물이 최종 설계다. 반복을 건너뛰거나 횟수를 줄이지 않는다.
-- `python3 scripts/scaffold_phase.py {phase-dir} --project {name} --steps step1 step2 ...` 로 파일 생성
+- `python3 skills/harness/framework/scripts/scaffold_phase.py {phase-dir} --project {name} --steps step1 step2 ...` 로 파일 생성
 - 사용자에게 phase 계획을 간단히 요약하고 승인을 받는다
 
 ### 2단계 — Phase 실행
@@ -74,12 +74,12 @@
 
 **방법 A — 배치 실행 (권장, 빠름)**
 ```bash
-python3 scripts/execute.py {phase-dir} --root {project-root}
+python3 skills/harness/framework/scripts/execute.py {phase-dir} --root {project-root}
 ```
 execute.py가 step을 순차 실행하고 자가 교정한다. 완료 후 결과를 요약한다.
 
 **방법 B — 직접 실행 (상세 제어가 필요할 때)**
-`docs/HARNESS.md` 섹션 D (실행)의 규칙을 따라 step을 하나씩 직접 수행한다.
+`skills/harness/framework/docs/HARNESS.md` 섹션 D (실행)의 규칙을 따라 step을 하나씩 직접 수행한다.
 
 **실행 루프 규칙 (방법 A·B 공통):**
 - 각 step은 산출물을 작성한 뒤 **step의 AC 전체를 검증**한다.
@@ -125,5 +125,5 @@ phase가 끝나면 에이전트가 직접 판정한다:
 ## 로컬 LLM (OpenCode) 사용 시
 
 OpenCode에 로컬 LLM을 연결한 상태라면 이 커맨드를 그대로 사용할 수 있다.
-배치 헤드리스 실행이 필요할 때는 `python3 scripts/loop.py --backend {llm-name}` 을 사용한다.
-`config.json`의 `local_api` 타입 백엔드 설정 방법은 `docs/ARCHITECTURE.md` 참고.
+배치 헤드리스 실행이 필요할 때는 `python3 skills/harness/framework/scripts/loop.py --backend {llm-name}` 을 사용한다.
+`config.json`의 `local_api` 타입 백엔드 설정 방법은 `skills/harness/framework/docs/ARCHITECTURE.md` 참고.

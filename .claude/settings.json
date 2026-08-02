@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -m pytest tests/ -q 2>&1 || true"
+            "command": "python3 -m pytest skills/harness/framework/tests -q 2>&1 || true"
           }
         ]
       }
