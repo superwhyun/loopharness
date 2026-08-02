@@ -36,6 +36,7 @@ class LoopController:
         self._goal = goal
         self._max_phases = goal.get("max_phases", max_phases)
         self._stagnation_limit = goal.get("stagnation_limit", stagnation_limit)
+        self._recovery_limit = goal.get("recovery_limit", 3)
         self._auto_push = auto_push
         self._phases_dir = project_root / "phases"
         self._phases_dir.mkdir(parents=True, exist_ok=True)
@@ -69,9 +70,22 @@ class LoopController:
                     break
                 print(f"  → 새 phase 생성: {phase_dir_name}")
 
-            # 2. Executor로 phase 실행
+            # 2. Executor로 phase 실행 (blocked step은 blocking-fix로 자동 복구)
             print(f"  → Executor: {phase_dir_name} 실행 중...")
-            success = self._run_phase(phase_dir_name)
+            recovery_count = 0
+            success = False
+            while not success:
+                success = self._run_phase(phase_dir_name)
+                if success:
+                    break
+                if not self._recover_if_blocked(phase_dir_name, planner):
+                    print("  ✗ Executor 실패 & 복구 불가 — 루프 종료")
+                    break
+                recovery_count += 1
+                if recovery_count >= self._recovery_limit:
+                    print(f"  ✗ {self._recovery_limit}회 복구 시도에도 실패 — 루프 종료")
+                    break
+                print(f"  → blocking-fix 추가 후 재시도 ({recovery_count}/{self._recovery_limit})")
             state["iterations"] += 1
 
             if not success:
@@ -153,6 +167,28 @@ class LoopController:
             if phase.get("status") == "pending":
                 return phase["dir"]
         return None
+
+    def _recover_if_blocked(self, phase_dir_name: str, planner: Planner) -> bool:
+        """phase에 blocked step이 있으면 blocking-fix를 append하고 재실행 가능하게 한다.
+
+        반환: 복구 경로를 만들었으면 True(재실행 가능), 아니면 False.
+        """
+        index_path = self._phases_dir / phase_dir_name / "index.json"
+        if not index_path.exists():
+            return False
+        try:
+            index = json.loads(index_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return False
+
+        blocked = [s for s in index.get("steps", []) if s.get("status") == "blocked"]
+        if not blocked:
+            return False
+
+        if planner._pending_blocking_fix(index) is None:
+            planner.append_blocking_fix(phase_dir_name, blocked[0])
+        print(f"  → 블록된 step {blocked[0]['step']} 복구를 위해 blocking-fix 배치")
+        return True
 
     def _run_phase(self, phase_dir_name: str) -> bool:
         # 지연 import — executor가 sys.exit 를 호출할 수 있으므로 catch

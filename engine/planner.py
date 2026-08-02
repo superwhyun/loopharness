@@ -190,3 +190,65 @@ class Planner:
         top_path.write_text(
             json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
         )
+
+    # ------------------------------------------------------------------
+    # Blocking-fix 자동 복구
+    # 배치 루프에서 step이 blocked가 되면 기존 step 번호를 재배열하지 않고
+    # blocking-fix step을 append해 해소한 뒤 원 step을 재개한다.
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _pending_blocking_fix(index: dict) -> Optional[dict]:
+        for s in index.get("steps", []):
+            if s.get("status") == "pending" and s.get("kind") == "blocking-fix":
+                return s
+        return None
+
+    def append_blocking_fix(self, phase_dir_name: str, blocked_step: dict) -> Optional[int]:
+        """blocked step을 해소할 blocking-fix step을 해당 phase에 append한다.
+
+        반환: append된 step 번호. 이미 실행 가능한 blocking-fix가 있으면 None.
+        """
+        index_path = self._phases_dir / phase_dir_name / "index.json"
+        if not index_path.exists():
+            return None
+        try:
+            index = json.loads(index_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+        if self._pending_blocking_fix(index) is not None:
+            return None
+
+        steps = index.setdefault("steps", [])
+        next_num = max((s.get("step", -1) for s in steps), default=-1) + 1
+        blocked_num = blocked_step.get("step")
+        reason = (blocked_step.get("blocked_reason") or "").strip()
+
+        steps.append({
+            "step": next_num,
+            "name": "blocking-fix",
+            "summary": f"Resolve blocker for step {blocked_num}",
+            "status": "pending",
+            "kind": "blocking-fix",
+            "unblocks": [blocked_num],
+        })
+        index_path.write_text(
+            json.dumps(index, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+
+        reason_section = reason or "(blocked_reason 미기록 — 원 step의 지시서를 읽어 원인 파악)"
+        step_md = (
+            f"# Step {next_num}: blocking-fix — unblocks step {blocked_num}\n\n"
+            f"## 목표\n\n원래 step {blocked_num}을 막는 문제를 해소한다.\n\n"
+            f"## 원인\n\n{reason_section}\n\n"
+            f"## 작업\n\n"
+            f"1. step {blocked_num}이 재개될 수 있도록 막는 contract/모듈 문제를 해결한다.\n"
+            f"2. 해결 후 `phases/{phase_dir_name}/index.json`에서 이 blocking-fix step을 `completed`로 기록한다.\n"
+            "3. 커밋한다.\n\n"
+            "## Acceptance Criteria\n\n"
+            f"- [ ] step {blocked_num}을 다시 진행할 수 있게 되었다\n"
+        )
+        (self._phases_dir / phase_dir_name / f"step{next_num}.md").write_text(
+            step_md, encoding="utf-8"
+        )
+        return next_num

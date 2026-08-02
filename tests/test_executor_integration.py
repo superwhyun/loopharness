@@ -6,12 +6,14 @@ import json
 import subprocess
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import sys
 
 # Ensure harness package is importable when running from tests/ directory
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import pytest
 
 from engine.executor import StepExecutor
 from engine.backends.base import BackendResult
@@ -213,3 +215,108 @@ def test_git_checkout_failure_is_fatal():
             pass
     finally:
         subprocess.run = original_run
+
+
+def _mark_completed_on_invoke(root, phase):
+    """invoke 시 첫 pending step을 completed로 기록하는 side_effect."""
+    def side_effect(prompt, **kwargs):
+        idx = json.loads((root / "phases" / phase / "index.json").read_text(encoding="utf-8"))
+        for s in idx["steps"]:
+            if s["status"] == "pending":
+                s["status"] = "completed"
+                s["summary"] = "done"
+                break
+        (root / "phases" / phase / "index.json").write_text(json.dumps(idx), encoding="utf-8")
+        return BackendResult(backend="mock", command=[], exit_code=0, stdout="ok", stderr="")
+    return side_effect
+
+
+def test_completion_rejected_when_runnable_ac_fails_and_retried():
+    """LLM이 completed로 기록해도 실행 가능한 AC가 실패하면 재작성으로 보낸다."""
+    root = _make_project("0-gated", ["step-a"])
+    step_path = root / "phases" / "0-gated" / "step0.md"
+    step_path.write_text(
+        "# Step 0: step-a\n\n"
+        "## 읽어야 할 파일\n\n- AGENTS.md\n\n## 작업\n\nComplete it.\n\n"
+        "## Acceptance Criteria\n\n```bash\ncheck-command\n```\n\n"
+        "## 검증 절차\n\nnone\n\n## 금지사항\n\n- none\n",
+        encoding="utf-8",
+    )
+    executor = StepExecutor(root=root, phase_dir_name="0-gated", backend_name="claude")
+    executor.MAX_RETRIES = 2
+    backend = _mock_backend()
+    backend.invoke.side_effect = _mark_completed_on_invoke(root, "0-gated")
+    executor._backend = backend
+
+    with patch("engine.executor.subprocess.run") as run:
+        run.return_value = subprocess.CompletedProcess(
+            args=["check-command"], returncode=1, stdout="boom", stderr=""
+        )
+        with pytest.raises(SystemExit):
+            executor._execute_all_steps("", "")
+
+    # 최대 재시도(2)만큼 시도한 뒤 실패 종료
+    assert backend.invoke.call_count == 2
+
+
+def test_completion_accepted_when_runnable_ac_passes():
+    """실행 가능한 AC가 통과하면 completed로 인정한다."""
+    root = _make_project("0-pass", ["step-a"])
+    step_path = root / "phases" / "0-pass" / "step0.md"
+    step_path.write_text(
+        "# Step 0: step-a\n\n"
+        "## 읽어야 할 파일\n\n- AGENTS.md\n\n## 작업\n\nComplete it.\n\n"
+        "## Acceptance Criteria\n\n```bash\ncheck-command\n```\n\n"
+        "## 검증 절차\n\nnone\n\n## 금지사항\n\n- none\n",
+        encoding="utf-8",
+    )
+    executor = StepExecutor(root=root, phase_dir_name="0-pass", backend_name="claude")
+    backend = _mock_backend()
+    backend.invoke.side_effect = _mark_completed_on_invoke(root, "0-pass")
+    executor._backend = backend
+
+    with patch("engine.executor.subprocess.run") as run:
+        run.return_value = subprocess.CompletedProcess(
+            args=["check-command"], returncode=0, stdout="ok", stderr=""
+        )
+        executor._execute_all_steps("", "")
+
+    idx = json.loads((root / "phases" / "0-pass" / "index.json").read_text(encoding="utf-8"))
+    assert idx["steps"][0]["status"] == "completed"
+    assert backend.invoke.call_count == 1
+
+
+def test_completion_uses_auto_checks_from_goal_json():
+    """goal.json의 auto_checks도 step 완료 교차 확인에 사용된다."""
+    root = _make_project("0-auto", ["step-a"])
+    (root / "goal.json").write_text(
+        json.dumps({"goal": "g", "auto_checks": ["proj-check"]}), encoding="utf-8"
+    )
+    executor = StepExecutor(root=root, phase_dir_name="0-auto", backend_name="claude")
+    executor.MAX_RETRIES = 2
+    backend = _mock_backend()
+    backend.invoke.side_effect = _mark_completed_on_invoke(root, "0-auto")
+    executor._backend = backend
+
+    with patch("engine.executor.subprocess.run") as run:
+        run.return_value = subprocess.CompletedProcess(
+            args=["proj-check"], returncode=1, stdout="", stderr="failing"
+        )
+        with pytest.raises(SystemExit):
+            executor._execute_all_steps("", "")
+
+    assert backend.invoke.call_count == 2
+
+
+def test_extract_ac_commands_only_reads_acceptance_criteria_section():
+    root = _make_project("0-aonly", ["step-a"])
+    step_path = root / "phases" / "0-aonly" / "step0.md"
+    step_path.write_text(
+        "# Step\n\n## 작업\n\n```bash\nwhoami\n```\n\n"
+        "## Acceptance Criteria\n\n```bash\nnpm run build\nnpm test\n```\n\n"
+        "## 검증 절차\n\n```bash\neq 'should-not-be-picked'\n```\n",
+        encoding="utf-8",
+    )
+    executor = StepExecutor(root=root, phase_dir_name="0-aonly", backend_name="claude")
+    cmds = executor._extract_ac_commands(step_path.read_text(encoding="utf-8"))
+    assert cmds == ["npm run build", "npm test"]

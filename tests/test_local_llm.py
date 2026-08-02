@@ -106,6 +106,21 @@ class TestBuildIterContext:
         ctx = build_iter_context(cfg, "output text", "", 0, 1)
         assert ctx == "output text"
 
+    def test_retry_includes_ac_failures_and_changed_files(self):
+        cfg = LoopConfig(type="retry")
+        ctx = build_iter_context(
+            cfg, "some stdout", "", 0, 1,
+            ac_failures=["`npm test` — 실패 (exit 1)"],
+            changed_files=["src/space-spec/parser.ts"],
+        )
+        assert "npm test" in ctx
+        assert "src/space-spec/parser.ts" in ctx
+
+    def test_retry_plain_behavior_preserved_without_enrichment(self):
+        cfg = LoopConfig(type="retry")
+        ctx = build_iter_context(cfg, "", "some error", 1, 1)
+        assert ctx == "some error"
+
     def test_fixed_includes_output(self):
         cfg = LoopConfig(type="fixed")
         ctx = build_iter_context(cfg, "prev output", "", 0, 2)

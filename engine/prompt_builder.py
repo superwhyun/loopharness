@@ -12,7 +12,7 @@ class PromptBuilder:
         common_files: list[str] | None = None,
     ) -> str:
         if common_files is None:
-            common_files = ["AGENTS.md", "docs/*.md"]
+            common_files = ["AGENTS.md", "docs/HARNESS.md", "docs/ARCHITECTURE.md"]
 
         sections = []
         seen: set = set()

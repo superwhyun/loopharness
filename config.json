@@ -35,6 +35,6 @@
     }
   },
   "context": {
-    "common_files": ["AGENTS.md", "docs/*.md"]
+    "common_files": ["AGENTS.md", "docs/HARNESS.md", "docs/ARCHITECTURE.md"]
   }
 }

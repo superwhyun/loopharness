@@ -90,3 +90,134 @@ AI 에이전트(`/loop`)가 Plan→Execute→Evaluate 싸이클을 자율 반복
 
 OpenCode, Cursor 등 에이전트 IDE에 로컬 LLM을 연결하면 `/loop` 커맨드를 그대로 사용할 수 있다.
 에이전트 없이 자동 실행할 때는 `python3 scripts/loop.py --backend my-llm`을 사용한다.
+
+---
+
+# Space Network — 차세대 메타버스 아키텍처
+
+## 개요
+
+차세대 메타버스는 하나의 거대한 가상세계가 아니라, **목적별로 생성된 공간들이 연결된 네트워크**다.
+사용자는 교육·협업·전시·시뮬레이션 등 각 목적에 맞는 공간으로 이동하며,
+이전 공간의 작업 상태, 객체 정보, 참여자 관계, 진행 상황을 그대로 이어갈 수 있다.
+
+## 시스템 구조
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                   Hybrid Runtime Layer                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐      │
+│  │ Web Adapter  │  │ Unity Adapter│  │ Unreal Adapter   │      │
+│  │ (Three.js/   │  │ (C# Script)  │  │ (C++/Blueprint)  │      │
+│  │  WebGPU)     │  │              │  │                  │      │
+│  └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘      │
+│         │                 │                    │               │
+│         └─────────────────┼────────────────────┘               │
+│                           │ IHybridBridge                       │
+├───────────────────────────┼─────────────────────────────────────┤
+│                Core Engine Layer                                │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │              Context Continuity Engine                  │   │
+│  │  (IContextStore, IContextMigrator, ISessionManager)     │   │
+│  └───────────────────────┬─────────────────────────────────┘   │
+│                          │                                     │
+│  ┌───────────────────────┼─────────────────────────────────┐   │
+│  │         State Sync Protocol              │              │   │
+│  │  (ISyncProtocol, CRDT, Conflict Resolver)│              │   │
+│  └───────────────────────┼─────────────────────────────────┘   │
+│                          │                                     │
+│  ┌───────────────────────┼─────────────────────────────────┐   │
+│  │     Space Spec Layer (SSL)            │                 │   │
+│  │  (ISpaceSpec, IObjectSpec, IEnvironmentSpec)            │   │
+│  └───────────────────────┼─────────────────────────────────┘   │
+│                          │                                     │
+├──────────────────────────┼─────────────────────────────────────┤
+│              Service Layer (Backend)                            │
+│  ┌────────────────┐ ┌──────────────┐ ┌────────────────────┐   │
+│  │ Space Registry │ │ Auth Context │ │ Generative AI      │   │
+│  │ (ISpaceRegistry│ │ (IAuthContext)│ │ (ISpaceGenerator,  │   │
+│  │  + Metadata)   │ │              │ │  IObjectGenerator)  │   │
+│  └────────────────┘ └──────────────┘ └────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 모듈 계층 구조
+
+| 계층 | 모듈 | 역할 | 의존성 |
+|------|------|------|--------|
+| **Runtime** | Web Adapter | Three.js/WebGPU 렌더링 | space-spec, state-sync |
+| **Runtime** | Unity Adapter | Unity C# 렌더링 | space-spec, state-sync |
+| **Runtime** | Unreal Adapter | Unreal C++ 렌더링 | space-spec, state-sync |
+| **Core** | Context Engine | 공간 간 맥락 지속성 | space-spec, state-sync |
+| **Core** | State Sync | 실시간 상태 동기화 | space-spec |
+| **Core** | Space Spec (SSL) | 공간/객체 명세 언어 | 없음 |
+| **Service** | Generative AI | AI 기반 자동 생성 | space-spec, context-engine |
+
+## 데이터 흐름
+
+### 1. 공간 로딩 흐름
+```text
+사용자 → Space Registry.getSpace(id)
+       → ISpaceSpec (SSL 파싱)
+       → IHybridBridge.loadSpace(spec)
+       → IRenderer.render(spec)
+```
+
+### 2. 상태 동기화 흐름 (실시간)
+```text
+참여자 A 조작 → Change 감지
+       → StateDelta 생성
+       → ISyncProtocol.publish(delta)
+       → (네트워크 전파)
+       → ISyncProtocol.subscribe (참여자 B~Z)
+       → IHybridBridge.applyDelta(delta)
+       → IRenderer.update(delta)
+```
+
+### 3. 컨텍스트 연속성 흐름 (공간 간 이동)
+```text
+사용자: Space A → Space B 이동
+       1. IContextStore.save(sessionId, snapshot)  ← Space A의 현재 상태 저장
+       2. snapshot = {
+            objects: { objectId: ObjectState },
+            users: { userId: UserState },
+            progress: ProgressState
+          }
+       3. ISessionManager.switchSpace(sessionId, targetSpaceId)
+       4. Space B 로딩
+       5. IContextMigrator.migrate(A, B, snapshot)
+       6. IContextMigrator.resolve(B, snapshot)
+       7. Space B에서 맥락 복원 (객체 선택 상태, UI 상태, 진행 상황 등)
+```
+
+### 4. 생성형 AI 파이프라인
+```text
+사용자 → "과학 실험실 공간 만들어줘" (자연어)
+       → ISpaceGenerator.generateSpace(prompt)
+       → (LLM이 공간 구조 설계)
+       → ISpaceSpec 출력 (객체, 환경, 상호작용 규칙 포함)
+       → IHybridBridge.loadSpace(spec)
+```
+
+## 공유 계약 (Shared Contracts)
+
+| Contract | 제공 모듈 | 소비 모듈 | 설명 |
+|----------|-----------|-----------|------|
+| ISpaceSpec | space-spec | 전체 | 공간 명세 read/write |
+| IObjectSpec | space-spec | 전체 | 객체 명세 read/write |
+| ISyncProtocol | state-sync | runtime 전체 | 상태 동기화 진입점 |
+| IStateDelta | state-sync | runtime 전체 | 변경 델타 데이터 |
+| IContextStore | context-engine | service/gen-ai | 컨텍스트 저장/복원 |
+| IContextMigrator | context-engine | service/gen-ai | 맥락 마이그레이션 |
+| IHybridBridge | runtime 전체 | core | 크로스 플랫폼 브리지 |
+| ISpaceGenerator | gen-ai | service | AI 공간 생성 |
+| ISpaceRegistry | service | runtime | 공간 메타데이터 저장소 |
+| IAuthContext | service | runtime | 인증/권한 |
+
+## 핵심 설계 원칙
+
+1. **SSL 우선 (Spec-first)**: 모든 런타임은 동일한 Space Spec을 해석하므로, Spec이 진실 공급원(SSOT)이다.
+2. **CRDT 기반 동기화**: 충돌 없는 데이터 타입으로 네트워크 지연과 오프라인 변경을 안전하게 병합한다.
+3. **Snapshot 기반 컨텍스트 전이**: 공간 간 이동 시 전체 상태의 스냅샷을 떠서 목적지에서 복원한다.
+4. **Plugin 런타임 아키텍처**: 각 런타임 어댑터는 동일한 IHybridBridge contract을 구현한다.
+5. **AI-native 생성**: 모든 공간과 객체는 생성형 AI가 SSL 포맷으로 출력하여, 사람이 직접 모델링하지 않아도 된다.

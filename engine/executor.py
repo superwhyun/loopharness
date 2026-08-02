@@ -1,5 +1,6 @@
 import json
 import re
+import subprocess
 import sys
 import threading
 import time
@@ -16,6 +17,7 @@ from .git_manager import GitManager
 from .loop_engine import LoopConfig, build_iter_context
 from .prompt_builder import PromptBuilder
 from .manifest import update_project_manifest
+from .workspace import WorkspaceSnapshot
 
 
 @contextlib.contextmanager
@@ -55,7 +57,7 @@ _FALLBACK_CONFIG: dict = {
             "guardrail_files": ["CLAUDE.md"],
         }
     },
-    "context": {"common_files": ["AGENTS.md", "docs/*.md"]},
+    "context": {"common_files": ["AGENTS.md", "docs/HARNESS.md", "docs/ARCHITECTURE.md"]},
 }
 
 
@@ -205,10 +207,79 @@ class StepExecutor:
             print(f"ERROR: {exc}")
             sys.exit(1)
 
+    # ------------------------------------------------------------------
+    # Objective completion gating
+    #
+    # "completed" 상태는 원칙적으로 step의 실행 가능한 검증(AC bash 블록 +
+    # goal.json의 auto_checks)을 실제로 통과해야 인정한다. LLM이 완료로
+    # 기록했더라도 실행 가능한 검증이 실패하면 재작성 반복으로 돌려보낸다.
+    # 실행 가능한 검증이 하나도 없으면(체크박스만 있는 step 등) 기존대로
+    # LLM self-report를 신뢰한다(no-op).
+    # ------------------------------------------------------------------
+
+    _AC_HEADING = re.compile(r"##\s+Acceptance Criteria", re.IGNORECASE)
+    _NEXT_HEADING = re.compile(r"^##\s+", re.MULTILINE)
+    _FENCE = re.compile(r"```(?:bash|sh)?\s*\n(.*?)\n```", re.DOTALL)
+
+    def _extract_ac_commands(self, step_text: str) -> List[str]:
+        m = self._AC_HEADING.search(step_text)
+        if not m:
+            return []
+        section = step_text[m.end():]
+        nxt = self._NEXT_HEADING.search(section)
+        if nxt:
+            section = section[: nxt.start()]
+        commands: List[str] = []
+        for fence in self._FENCE.findall(section):
+            for raw in fence.splitlines():
+                line = raw.strip()
+                if line and not line.startswith("#"):
+                    commands.append(line)
+        return commands
+
+    def _load_auto_checks(self) -> List[str]:
+        goal_path = Path(self._root) / "goal.json"
+        if not goal_path.exists():
+            return []
+        try:
+            goal = self._read_json(goal_path)
+        except (OSError, json.JSONDecodeError):
+            return []
+        checks = goal.get("auto_checks", [])
+        return [c for c in checks if isinstance(c, str) and c.strip()]
+
+    def _run_checks(self, commands: List[str]) -> List[str]:
+        """각 검증 명령을 실행하고 실패한 항목의 설명을 반환한다."""
+        failures: List[str] = []
+        for cmd in commands:
+            try:
+                res = subprocess.run(
+                    cmd, shell=True, cwd=self._root,
+                    capture_output=True, text=True, timeout=600,
+                )
+                if res.returncode != 0:
+                    out = (res.stdout or res.stderr).strip()[:400]
+                    line = f"`{cmd}` — 실패 (exit {res.returncode})"
+                    if out:
+                        line += f"\n  {out}"
+                    failures.append(line)
+            except Exception as exc:  # noqa: BLE001
+                failures.append(f"`{cmd}` — 실행 오류: {exc}")
+        return failures
+
+    def _verify_runnable_checks(self, step_text: str) -> List[str]:
+        commands = self._extract_ac_commands(step_text) + self._load_auto_checks()
+        commands = [c for c in commands if c.strip()]
+        if not commands:
+            return []
+        return self._run_checks([c for c in dict.fromkeys(commands)])
+
     def _execute_single_step(self, step: dict, guardrails: str, manifest_context: str):
         step_num, step_name = step["step"], step["name"]
         loop_cfg = LoopConfig.from_step(step, default_max=self.MAX_RETRIES)
         iter_context: Optional[str] = None
+        step_file = self._phase_dir / f"step{step_num}.md"
+        step_text = step_file.read_text(encoding="utf-8")
 
         # Computed once — completed steps and their summaries don't change during retries
         index = self._read_json(self._index_file)
@@ -233,30 +304,44 @@ class StepExecutor:
                 tag += f" [{loop_cfg.label} {iteration}/{loop_cfg.max_iterations}]"
 
             with progress_indicator(tag) as pi:
-                step_file = self._phase_dir / f"step{step_num}.md"
-                prompt = preamble + step_file.read_text(encoding="utf-8")
+                before = WorkspaceSnapshot(self._root).capture()
+                prompt = preamble + step_text
                 result = self._backend.invoke(
                     prompt,
                     cwd=self._root,
                     timeout=self.COMMAND_TIMEOUT,
                     index_file=self._index_file,
                 )
+                after = WorkspaceSnapshot(self._root).capture()
+                changed_files = WorkspaceSnapshot.diff(before, after)
                 elapsed = int(pi.elapsed)
 
             index = self._read_json(self._index_file)
             status = next((s["status"] for s in index["steps"] if s["step"] == step_num), "pending")
 
+            ac_failures: List[str] = []
             if status == "completed":
-                print(f"  ✓ Step {step_num}: {step_name} [{elapsed}s]")
-                current_step = next((s for s in index["steps"] if s["step"] == step_num), step)
-                released_steps = self._release_blocked_steps(index, current_step)
-                if released_steps:
-                    current_step["unblocked_steps"] = released_steps
-                    self._write_json(self._index_file, index)
-                if not self._git.commit_all(self.FEAT_MSG.format(project=self._project, num=step_num, name=step_name)):
-                    print(f"  ✗ Step {step_num} commit 실패 — 중단")
+                # "completed" self-report를 실행 가능한 검증으로 교차 확인.
+                ac_failures = self._verify_runnable_checks(step_text)
+                if not ac_failures:
+                    print(f"  ✓ Step {step_num}: {step_name} [{elapsed}s]")
+                    current_step = next((s for s in index["steps"] if s["step"] == step_num), step)
+                    released_steps = self._release_blocked_steps(index, current_step)
+                    if released_steps:
+                        current_step["unblocked_steps"] = released_steps
+                        self._write_json(self._index_file, index)
+                    if not self._git.commit_all(self.FEAT_MSG.format(project=self._project, num=step_num, name=step_name)):
+                        print(f"  ✗ Step {step_num} commit 실패 — 중단")
+                        sys.exit(1)
+                    return True
+                # LLM이 완료로 기록했지만 실행 가능한 검증이 실패 — 완료로 인정하지
+                # 않고 재작성 반복으로 보낸다.
+                print(f"  ✗ Step {step_num} claimed completed but verification failed — retrying")
+                if iteration == loop_cfg.max_iterations:
+                    print(f"  ✗ Step {step_num} failed after {loop_cfg.max_iterations} {loop_cfg.label} iteration(s). Verification still failing:")
+                    for f in ac_failures:
+                        print(f"     - {f}")
                     sys.exit(1)
-                return True
 
             if status == "blocked":
                 print(f"  ✗ Step {step_num} set itself to blocked. Append a blocking-fix step to index.json and re-run.")
@@ -277,6 +362,8 @@ class StepExecutor:
                 result_exit_code=result.exit_code,
                 iteration=iteration,
                 reflect_invoker=_reflect_invoker if loop_cfg.type == "reflect" else None,
+                changed_files=changed_files,
+                ac_failures=ac_failures,
             )
 
     def _execute_all_steps(self, guardrails: str, manifest_context: str):
