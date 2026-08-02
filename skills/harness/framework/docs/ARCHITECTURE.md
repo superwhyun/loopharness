@@ -9,8 +9,9 @@
 git clone <repo-url> ~/harness-framework
 cd ~/harness-framework
 bash install.sh
-# ~/.claude/skills/harness, ~/.kimi/skills/harness 등이 이 저장소의
-# skills/harness/ 를 가리키는 심볼릭 링크로 생성된다.
+# ~/.agents/skills/harness 가 이 저장소의 skills/harness/ 를 가리키는
+# 심볼릭 링크로 생성되고, ~/.claude/skills/harness, ~/.kimi/skills/harness,
+# ~/.codex/skills/harness 는 다시 ~/.agents/skills/harness 를 가리킨다.
 
 cd ~/아무-프로젝트
 # 여기서 하네스 스킬이 자동 로드된 상태로 /harness 또는 /loop 시작
@@ -35,7 +36,9 @@ harness-framework/                    ← 이 저장소 (프레임워크 소스,
 │       ├── docs/                     # 프레임워크 문서 (이 문서 포함)
 │       ├── tests/                    # 엔진 테스트
 │       └── config.json               # 백엔드 정의 (claude/codex/kimi 등)
-├── install.sh                        # skills/harness/ 를 유저 레벨로 symlink
+├── install.sh                        # skills/harness/ 를 ~/.agents/skills/harness 에,
+│                                      # 각 툴(claude/kimi/codex)의 skills/harness 를
+│                                      # 다시 거기로 symlink
 ├── AGENTS.md, CLAUDE.md, GEMINI.md   # 이 저장소(프레임워크 개발) 자체를 위한 진입점
 └── .claude/commands/, .kimi/skills/, .gemini/commands/
                                        # 이 저장소를 직접 열었을 때를 위한 로컬 진입점

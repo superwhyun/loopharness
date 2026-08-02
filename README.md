@@ -16,7 +16,7 @@ cd ~/harness-framework
 bash install.sh
 ```
 
-`install.sh`는 `~/.claude/skills/harness`, `~/.kimi/skills/harness`를 이 클론의 `skills/harness/`로 symlink 합니다. 이후 어떤 프로젝트 디렉터리를 열어도 harness 스킬이 자동 로드됩니다.
+`install.sh`는 `~/.agents/skills/harness`를 이 클론의 `skills/harness/`로 symlink하고, `~/.claude/skills/harness`, `~/.kimi/skills/harness`, `~/.codex/skills/harness`를 다시 그곳으로 symlink 합니다. 이후 어떤 프로젝트 디렉터리를 열어도 harness 스킬이 자동 로드됩니다.
 
 **업데이트**는 `~/harness-framework`에서 `git pull` 한 번이면 됩니다. symlink이므로 재설치가 필요 없습니다.
 
@@ -219,7 +219,8 @@ harness-framework/           # 이 저장소 (프레임워크 소스, 한 곳에
 ├── AGENTS.md                # 전사 공통 코딩 에이전트 규칙 (Canonical Rules)
 ├── CLAUDE.md                # Claude Code Supplement
 ├── GEMINI.md                # Gemini / Antigravity Supplement
-├── install.sh               # skills/harness/ 를 유저 레벨 스킬로 symlink
+├── install.sh               # skills/harness/ 를 ~/.agents/skills/harness 에,
+│                             # 각 툴의 skills/harness 를 다시 거기로 symlink
 └── skills/harness/
     ├── SKILL.md              # 스킬 진입점 (Claude Code / Kimi 공용)
     └── framework/             # 번들 프레임워크 — 실제 배포되는 원본

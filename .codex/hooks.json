@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python -m pytest tests/ -v 2>&1"
+            "command": "python -m pytest skills/harness/framework/tests -v 2>&1"
           }
         ]
       }
