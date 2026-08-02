@@ -41,16 +41,14 @@ _SYSTEM = """당신은 Harness 프레임워크 프로젝트 플래너입니다.
 """
 
 _REVIEW_QUESTIONS = (
-    "빠진 요구사항, 사용자 흐름, 예외 상황은 없는가?",
-    "확실한가? 목표와 성공 기준을 모두 충족하도록 phase와 step이 나뉘어 있는가?",
-    "완전히 고려했는가? 모듈 경계, public contract, 의존성, 기존 baseline과의 연결을 다시 점검하라.",
-    "각 step의 owned_paths와 금지 경로가 겹치지 않고, Acceptance Criteria가 실제로 검증 가능한가?",
-    "범위가 과도하거나 누락된 부분은 없는가? 다음 세션의 에이전트가 이 계획만으로 안전하게 이어갈 수 있는가?",
+    "빠진 것 없어? 누락된 요구사항, 엣지 케이스, 모듈/의존성이 없는지 점검하고 채워라.",
+    "완벽한 것 같아? AC가 측정 가능한 명령으로 구체화됐는지, owned_paths/read_contracts/forbidden_paths가 정합적인지 점검하고 다듬어라.",
+    "이대로 구현 바로 하면 돼? 독립 세션에서도 바로 실행 가능한지, 검증 절차와 범위가 실행 가능한 수준인지 최종 점검하라.",
 )
 
 
 class Planner:
-    def __init__(self, backend: AgentBackend, phases_dir: Path, review_count: int = 5):
+    def __init__(self, backend: AgentBackend, phases_dir: Path, review_count: int = 3):
         self._backend = backend
         self._phases_dir = phases_dir
         self._review_count = max(0, review_count)

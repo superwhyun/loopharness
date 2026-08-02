@@ -1,6 +1,6 @@
 # Harness Framework 🚀
 
-하네스 프레임워크는 작업을 원자 단위의 `Step`으로 분해하고, 세션이 중단되더라도 다양한 AI 코딩 에이전트(Antigravity, Gemini, Claude, Kimi 등)가 상태를 안전하게 공유하며 이어서 작업할 수 있도록 지원하는 **범용 하네스 워크플로우 인프라**입니다.
+하네스 프레임워크는 작업을 원자 단위의 `Step`으로 분해하고, 세션이 중단되더라도 다양한 AI 코딩 에이전트(Antigravity, Claude, Codex, Kimi 등)가 상태를 안전하게 공유하며 이어서 작업할 수 있도록 지원하는 **범용 하네스 워크플로우 인프라**입니다.
 
 이 프레임워크는 무한 자동화 루프 대신 **"구조화된 작업 기록과 안전한 세션 재개"**를 핵심 가치로 삼습니다.
 
@@ -153,30 +153,25 @@ graph TD
 ## 🤖 에이전트별 사용 가이드
 
 ### 1. Antigravity (IDE 통합 에이전트)
-Antigravity는 IDE 내부에 고도로 융합된 에이전트로, 전역 시스템 설정(`~/.gemini/antigravity/`)을 로드하여 독립적으로 작동합니다.
-* **동작 차이**: 터미널 단독 툴인 Gemini CLI와 달리, 로컬 리포지토리의 `.gemini/commands/*.toml` 설정이 자동완성 UI 커맨드로 직접 노출되지 않을 수 있습니다.
-* **사용법**: UI 자동완성에 구애받지 않고 채팅 창에 아래 명령어나 자연어 프롬프트를 자유롭게 입력하여 실행하면 최적의 워크플로우를 완벽하게 작동시킵니다.
+Antigravity는 IDE 내부에 고도로 융합된 에이전트로, `GEMINI.md`와 `.agy/commands/*.toml`을 기준으로 작동합니다. 자세한 내용은 `GEMINI.md` 참고.
+* **사용법**: 채팅 창에 아래 명령어나 자연어 프롬프트를 자유롭게 입력하여 실행합니다.
   ```text
   /harness
   /review
+  /loop
   ```
   *자연어 입력 예시: `harness 워크플로우 진행해줘`, `현재 코드의 변경사항 리뷰 수행해줘`*
 
-### 2. Gemini CLI (터미널 단독 툴)
-* 로컬 컨텍스트 파일: `.gemini/settings.json`
-* 프로젝트 커맨드: `.gemini/commands/harness.toml`, `review.toml`
-* 실행 방법: 터미널 창에서 직접 `/harness` 또는 `/review` 입력
-
-### 3. Claude Code
+### 2. Claude Code
 * 프로젝트 규칙: `CLAUDE.md`
-* 프로젝트 명령: `.claude/commands/harness.md`, `review.md`
-* 실행 방법: `/harness` 또는 `/review` 입력
+* 프로젝트 명령: `.claude/commands/harness.md`, `review.md`, `loop.md`
+* 실행 방법: `/harness`, `/review` 또는 `/loop` 입력
 
-### 4. Kimi Code CLI
+### 3. Kimi Code CLI
 * 프로젝트 규칙: `AGENTS.md`
 * 실행 방법: `/skill:harness` 또는 `/skill:review` 입력
 
-### 5. Codex
+### 4. Codex
 * 별도의 슬래시 커맨드를 사용하지 않으며, `AGENTS.md`를 표준으로 삼아 자연어 명령으로 워크플로우를 요청합니다.
   *예시: `현재 phases 상태를 읽고 첫 pending step부터 진행해줘`*
 
@@ -230,6 +225,7 @@ python3 ~/.claude/skills/harness/framework/scripts/execute.py 0-mvp --backend ag
         ├── config.json        # 백엔드 및 보안 옵션 설정
         ├── docs/               # 프레임워크 표준 지침 문서
         │   ├── HARNESS.md      # 하네스 스텝 및 세션 라이프사이클 명세
+        │   ├── LOOP.md         # 자율 개발 루프(Plan→Execute→Evaluate) 워크플로우
         │   ├── REVIEW.md       # 코드 품질 및 아키텍처 리뷰 표준 가이드
         │   ├── ARCHITECTURE.md # 프레임워크 및 데이터 흐름 아키텍처
         │   └── ADR.md          # 아키텍처 주요 결정 이력

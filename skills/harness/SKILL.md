@@ -42,6 +42,11 @@ description: Run the autonomous Plan → Execute → Evaluate development loop a
 
 - 한 번에 한 step. `completed`면 다음 step, `blocked`면(pending blocking-fix가 있으면) 그것부터.
 - 남은 phase가 없거나 요청이 범위를 벗어난 새 기능이면 **다음 phase를 설계**(append-only, 기존 step 번호 재정렬 금지).
+- **phase 목록/step 구성 초안은 확정 전 3회 반복 자가검증을 반드시 거친다** (진입 경로가 `/harness`든 `/loop`든 이 스킬 단독 사용이든 동일하게 적용). 판정만 하고 넘어가지 않고, 매 회차 실제 파일(phase 목록, `stepN.md`)을 고쳐 쓴다.
+  1. **1회차 — "빠진 것 없어?"**: 누락 요구사항·엣지 케이스·모듈/의존성 점검 후 보강.
+  2. **2회차 — "완벽한 것 같아?"**: AC를 측정 가능한 명령으로 구체화, `owned_paths`/`read_contracts`/`forbidden_paths` 정합성 점검.
+  3. **3회차 — "이대로 구현 바로 하면 돼?"**: 독립 세션에서 바로 실행 가능한 수준인지 최종 점검.
+  - "이번 회차는 유지"나 로그만 남기는 것은 재작성으로 인정하지 않는다. 자세한 규칙과 근거는 `framework/docs/HARNESS.md` 섹션 C 항목 11 참고.
 
 ## 3. step 실행 (Execute)
 
@@ -67,6 +72,10 @@ description: Run the autonomous Plan → Execute → Evaluate development loop a
 - **done**: 전부 충족 + auto_checks 통과 → 종료.
 - **continue**: 진전 있음 → 다음 phase.
 - **stagnated**: 실질 진전 없음 → 3회 연속이면 중단.
+
+## 자율 루프 (여러 phase 연속 진행)
+
+사용자가 여러 phase를 이어서 자동으로 진행해 달라고 하면(`/loop` 유무와 무관하게) `framework/docs/LOOP.md`의 목표 확정 → 반복 → 평가 절차를 따른다.
 
 ## 배치 실행 (헤드리스)
 

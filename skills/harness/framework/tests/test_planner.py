@@ -32,15 +32,13 @@ def _goal() -> dict:
     return {"goal": "Build the feature", "success_criteria": ["It works"]}
 
 
-def test_planner_runs_five_default_self_review_passes_and_applies_final_plan(tmp_path):
-    """The default is an initial draft followed by five distinct review prompts."""
+def test_planner_runs_three_default_self_review_passes_and_applies_final_plan(tmp_path):
+    """The default is an initial draft followed by three distinct review prompts."""
     backend = MagicMock()
     backend.query.side_effect = [
         _plan("0-draft", "Draft", "draft-step"),
         _plan("0-review-1", "Review 1", "review-1"),
         _plan("0-review-2", "Review 2", "review-2"),
-        _plan("0-review-3", "Review 3", "review-3"),
-        _plan("0-review-4", "Review 4", "review-4"),
         _plan("0-final", "Final", "final-step"),
     ]
     phases_dir = tmp_path / "phases"
@@ -49,12 +47,12 @@ def test_planner_runs_five_default_self_review_passes_and_applies_final_plan(tmp
     result = Planner(backend, phases_dir).plan_next_phase(_goal(), "no prior phases")
 
     assert result == "0-final"
-    assert backend.query.call_count == 6
+    assert backend.query.call_count == 4
     review_prompts = [call.args[0] for call in backend.query.call_args_list[1:]]
-    assert len(review_prompts) == 5
+    assert len(review_prompts) == 3
     assert any("빠진" in prompt for prompt in review_prompts)
-    assert any("확실" in prompt for prompt in review_prompts)
-    assert any("완전히" in prompt or "완전" in prompt for prompt in review_prompts)
+    assert any("완벽한" in prompt for prompt in review_prompts)
+    assert any("바로 하면" in prompt for prompt in review_prompts)
 
     index = json.loads((phases_dir / "0-final" / "index.json").read_text(encoding="utf-8"))
     assert index["phase"] == "Final"

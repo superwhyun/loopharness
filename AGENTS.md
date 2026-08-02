@@ -77,6 +77,11 @@ Claude Code, Antigravity CLI (agy), Kimi Code CLI에서도 이 파일 내용을 
 - contract가 틀려 현재 step을 완료할 수 없으면 현재 step을 `blocked`로 기록하고 `blocking-fix` 또는 `contract-change` step을 append한다. append된 blocking step은 즉시 우선 수행한다.
 - 현재 step을 막지 않는 개선사항은 현재 step을 완료한 뒤 phase 마지막에 `backlog-fix` step으로 append한다.
 - 이미 존재하는 step 번호를 재정렬하거나 renumbering 하지 않는다. 새 step은 항상 append한다.
+- **phase 목록과 step 구성 초안은 확정 전에 3회 반복 자가검증을 거친다.** 판정만 하고 넘어가지 않고, 매 회차 실제 파일(phase 목록, `stepN.md`)을 고쳐 쓴다.
+  1. 1회차 — "빠진 것 없어?": 누락 요구사항·엣지 케이스·모듈/의존성 점검 후 보강.
+  2. 2회차 — "완벽한 것 같아?": AC를 측정 가능한 명령으로 구체화, `owned_paths`/`read_contracts`/`forbidden_paths` 정합성 점검.
+  3. 3회차 — "이대로 구현 바로 하면 돼?": 독립 세션에서 바로 실행 가능한 수준인지 최종 점검.
+  - "이번 회차는 유지"나 로그만 남기는 것은 재작성으로 인정하지 않는다. 자세한 근거는 `skills/harness/framework/docs/HARNESS.md` 섹션 C 항목 11 참고.
 - 새 phase를 만들 때는 `skills/harness/framework/scripts/scaffold_phase.py --root {대상 프로젝트 경로}`를 사용한다.
 - phase 파일을 생성하거나 크게 수정한 뒤에는 `skills/harness/framework/scripts/validate_phase.py --root {대상 프로젝트 경로}`로 형식을 검증한다.
 

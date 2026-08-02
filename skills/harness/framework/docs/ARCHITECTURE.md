@@ -39,8 +39,7 @@ cd ~/아무-프로젝트
 ├── install.sh                        # 각 툴(claude/kimi/codex)의 skills/harness 를
 │                                      # 이 클론의 skills/harness/ 로 symlink
 ├── AGENTS.md, CLAUDE.md, GEMINI.md   # 이 저장소(프레임워크 개발) 자체를 위한 진입점
-└── .claude/commands/, .kimi/skills/, .gemini/commands/
-                                       # 이 저장소를 직접 열었을 때를 위한 로컬 진입점
+└── .claude/commands/                 # 이 저장소를 직접 열었을 때를 위한 로컬 진입점 (Claude Code)
 
 대상-프로젝트/                          ← 하네스 스킬로 작업하는 실제 프로젝트 (별도 디렉터리)
 ├── phases/                           # 프로젝트 진행 상태 SSOT (git ignored by default)
