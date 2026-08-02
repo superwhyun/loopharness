@@ -6,23 +6,23 @@
 프레임워크 저장소를 대상 프로젝트마다 클론하지 않는다.
 
 ```bash
-git clone https://github.com/superwhyun/skill-harness.git ~/harness-framework
-cd ~/harness-framework
+mkdir -p ~/.agents/skills
+git clone https://github.com/superwhyun/skill-harness.git ~/.agents/skills/harness
+cd ~/.agents/skills/harness
 bash install.sh
-# ~/.agents/skills/harness 가 이 저장소의 skills/harness/ 를 가리키는
-# 심볼릭 링크로 생성되고, ~/.claude/skills/harness, ~/.kimi/skills/harness,
-# ~/.codex/skills/harness 는 다시 ~/.agents/skills/harness 를 가리킨다.
+# ~/.claude/skills/harness, ~/.kimi/skills/harness, ~/.codex/skills/harness 가
+# 이 클론의 skills/harness/ 를 가리키는 심볼릭 링크로 생성된다.
 
 cd ~/아무-프로젝트
 # 여기서 하네스 스킬이 자동 로드된 상태로 /harness 또는 /loop 시작
 ```
 
-업데이트는 `~/harness-framework`에서 `git pull` 한 번이면 된다. 심볼릭 링크로 연결돼 있으므로 설치된 스킬도 즉시 최신 상태가 된다.
+업데이트는 `~/.agents/skills/harness`에서 `git pull` 한 번이면 된다. 심볼릭 링크로 연결돼 있으므로 설치된 스킬도 즉시 최신 상태가 된다. **이 클론 디렉터리는 지우면 안 된다** — symlink가 가리키는 실제 원본이다.
 
 ## 디렉토리 구조
 
 ```text
-harness-framework/                    ← 이 저장소 (프레임워크 소스, 프로젝트 인스턴스 아님)
+~/.agents/skills/harness/              ← 이 저장소 (프레임워크 소스, 프로젝트 인스턴스 아님)
 ├── skills/harness/
 │   ├── SKILL.md                      # 스킬 진입점 (Claude Code / Kimi 공용 포맷)
 │   └── framework/                    # 번들 프레임워크 — 실제 배포되는 원본
@@ -36,9 +36,8 @@ harness-framework/                    ← 이 저장소 (프레임워크 소스,
 │       ├── docs/                     # 프레임워크 문서 (이 문서 포함)
 │       ├── tests/                    # 엔진 테스트
 │       └── config.json               # 백엔드 정의 (claude/codex/kimi 등)
-├── install.sh                        # skills/harness/ 를 ~/.agents/skills/harness 에,
-│                                      # 각 툴(claude/kimi/codex)의 skills/harness 를
-│                                      # 다시 거기로 symlink
+├── install.sh                        # 각 툴(claude/kimi/codex)의 skills/harness 를
+│                                      # 이 클론의 skills/harness/ 로 symlink
 ├── AGENTS.md, CLAUDE.md, GEMINI.md   # 이 저장소(프레임워크 개발) 자체를 위한 진입점
 └── .claude/commands/, .kimi/skills/, .gemini/commands/
                                        # 이 저장소를 직접 열었을 때를 위한 로컬 진입점
