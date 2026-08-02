@@ -89,6 +89,8 @@ python3 scripts/scaffold_phase.py {phase-dir} --project {name} --steps step1 ste
 
 ### E. Phase 마감 (Baseline)
 
+`/loop` 자율 루프에서는 phase의 모든 step이 완료된 뒤, 마감 전에 `LOOP.md`의 "2.5단계 — Phase 리뷰 게이트"를 통과해야 한다 (findings를 사람 개입 없이 최대 3회 자동 수정, 남으면 known issues로 기록).
+
 phase 종료 시에는 다음 phase가 전체 구현을 다시 읽지 않도록 `phases/baselines/{phase-dir}.json`에 아래를 남긴다. 배치 실행기는 최소 baseline skeleton을 자동 생성하며, 에이전트는 필요한 경우 내용을 더 풍부하게 보강한다.
 - 완료 tag
 - 모듈 목록과 public surface

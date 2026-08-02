@@ -4,6 +4,8 @@
 AI 에이전트(Claude Code, Codex, Kimi Code CLI, OpenCode, Gemini 등)가 루프를 직접 오케스트레이션할 때 이 문서를 기준으로 작업한다.
 `scripts/loop.py`는 에이전트 없이 완전 배치 실행할 때만 사용한다.
 
+**사람 개입 지점은 Phase 0(목표 확정) 단 한 번뿐이다.** `goal.json`이 확정된 이후에는 phase 결정 → step 실행 → phase 리뷰 게이트(2.5단계) → 평가를 사람 승인 없이 반복하며, `stagnated`로 막히는 경우에만 사람에게 알린다.
+
 ---
 
 ## 전제 조건
@@ -64,7 +66,7 @@ AI 에이전트(Claude Code, Codex, Kimi Code CLI, OpenCode, Gemini 등)가 루�
 - `HARNESS.md` 섹션 C (Step 설계)의 규칙을 따른다
 - phase 목록과 각 phase의 step 구성은 **`HARNESS.md` 섹션 C 항목 11의 3회 반복 자가검증**(1회차: 빠진 것 없어? / 2회차: 완벽한 것 같아? / 3회차: 이대로 구현 바로 하면 돼?)을 그대로 적용한다. 판정만 하고 넘어가지 않는다 — 매 회차 실제 파일 내용을 고쳐 쓴다.
 - `python3 skills/harness/framework/scripts/scaffold_phase.py {phase-dir} --project {name} --steps step1 step2 ...` 로 파일 생성
-- 사용자에게 phase 계획을 간단히 요약하고 승인을 받는다
+- 설계가 끝나면 사람의 승인을 기다리지 않고 바로 2단계로 진행한다. (사람 개입은 Phase 0의 목표 확정 한 번뿐이다 — 그 이후 phase 결정·실행·리뷰·평가 사이클은 전부 자동 진행한다.)
 
 ### 2단계 — Phase 실행
 
@@ -86,9 +88,22 @@ execute.py가 step을 순차 실행하고 자가 교정한다. 완료 후 결과
 - 재작성은 **최대 3회**. 3회 내에 통과하지 못하면 그 step을 `blocked`로 기록하고, 원인이 step 범위 밖이면 `blocking-fix`/`contract-change` step을 append해 해소한다.
 - 실행 루프는 **무한정 돌리지 않는다** — AC가 루프의 종료 신호다.
 
+### 2.5단계 — Phase 리뷰 게이트 (사람 개입 없이 자동 반복)
+
+phase의 모든 step이 `completed`가 되면, 다음 phase로 넘어가기 전에 이 phase의 변경 사항을 반드시 리뷰한다. 판정을 사람에게 묻지 않고 에이전트가 직접 반복한다.
+
+1. `framework/docs/REVIEW.md`의 리뷰 워크플로우를 이 phase 시작 이후의 diff(마지막 phase 태그 이후 변경분) 전체에 대해 실행한다.
+2. 리뷰 결과가 "no findings"면 리뷰 통과 — 3단계(평가)로 진행한다.
+3. findings가 있으면:
+   - 지적된 항목을 해소하는 step을 현재 phase에 append한다 (`kind: "review-fix"`, 기존 step 번호는 재정렬하지 않는다). 여러 findings는 하나의 review-fix step에 함께 묶어도 된다.
+   - "2단계 — Phase 실행"의 규칙대로 그 step을 실행한다 (AC 게이트, 최대 3회 재작성 등 동일하게 적용).
+   - 실행 후 다시 1번부터 리뷰를 반복한다.
+4. 이 리뷰→수정 사이클은 phase당 **최대 3회**까지 자동 반복한다.
+5. 3회 안에 findings가 모두 해소되면 리뷰 통과로 처리한다. 3회를 넘겨도 findings가 남아 있으면, 남은 항목을 `phases/baselines/{phase-dir}.json`의 `known_issues`에 기록하고 리뷰를 통과한 것으로 간주해 다음 단계로 진행한다 — 전체 루프를 사람 응답 대기로 멈추지 않는다.
+
 ### 3단계 — 평가
 
-phase가 끝나면 에이전트가 직접 판정한다:
+phase 리뷰 게이트를 통과한 뒤, 에이전트가 직접 판정한다:
 
 1. `goal.json`의 `auto_checks` 명령을 실행한다
 2. `success_criteria`를 하나씩 확인한다
