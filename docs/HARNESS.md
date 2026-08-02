@@ -61,17 +61,25 @@ python3 scripts/scaffold_phase.py {phase-dir} --project {name} --steps step1 ste
 4. 각 step은 `owned_paths`, `read_contracts`, `forbidden_paths`를 명시한다.
 5. 후속 step은 의존 모듈의 구현 내부가 아니라 public contract를 기본 입력으로 삼는다.
 6. AC는 실행 가능한 명령으로 적는다.
-7. 현재 step을 막는 외부 contract/모듈 문제가 발견되면 현재 step을 `blocked`로 기록하고 `blocking-fix` 또는 `contract-change` step을 append한다.
-8. 현재 step을 막지 않는 개선사항은 phase 마지막에 `backlog-fix` step으로 append한다.
-9. 기존 step 번호는 재정렬하지 않는다. 새 step은 항상 append한다.
+7. **AC는 루프 종료 신호로도 쓰이므로 다음을 지킨다:** (a) 각 AC는 `test -f`, `grep -cE`, `validate_phase` 같은 **측정 가능한 명령**으로 쓴다. (b) AC는 **항목별로 분리**해서 쓴다 — 통과하지 못했을 때 "어느 항목이 부족한지" 실행자가 바로 알 수 있어야, 다음 재작성이 그 결함을 고칠 수 있다. (c) 모든 AC 통과 = 이 step 완료의 종료 신호다.
+8. 현재 step을 막는 외부 contract/모듈 문제가 발견되면 현재 step을 `blocked`로 기록하고 `blocking-fix` 또는 `contract-change` step을 append한다.
+9. 현재 step을 막지 않는 개선사항은 phase 마지막에 `backlog-fix` step으로 append한다.
+10. 기존 step 번호는 재정렬하지 않는다. 새 step은 항상 append한다.
 
 ### D. 실행 (Execution)
 `pending` 상태인 스텝부터 이어서 작업한다.
 - `completed`면 다음 스텝으로 이동.
 - `blocked`면 이유를 기록한다. 단, pending `blocking-fix` step이 있으면 그 step을 먼저 수행한다.
 - `error`면 원인과 재개 힌트 남기고 중단.
-- 스텝당 최대 3회 재시도.
 - `blocking-fix` step 완료 후에는 `unblocks` 대상 step을 다시 `pending`으로 풀고 원래 흐름으로 돌아간다.
+
+**실행 루프 (step별):**
+1. `owned_paths` 산출물을 작성한다.
+2. step의 **AC 전체를 검증**한다.
+3. **AC를 모두 통과하면** 이 step을 `completed`로 만들고 다음 step으로 간다.
+4. **AC를 통과하지 못하면** 단순 재실행이 아니라, **AC가 지목한 결함 항목을 고쳐서 산출물 내용을 재작성**한 뒤 다시 AC를 검증한다.
+5. 재작성은 **최대 3회**까지. 3회 내에 AC를 통과하지 못하면 이 step을 `blocked`로 기록한다.
+6. `blocked` 후 대응은 기존 규칙을 따른다: 원인이 step 범위 밖의 contract/모듈 문제면 `blocking-fix`/`contract-change` step을 append해 즉시 해소하고, 해소되면 원 step을 다시 `pending`으로 풀어 재개한다. (스코프가 커서 해결이 안 되는 경우에만 작은 step으로 쪼갠다 — 분해를 별도 체계로 만들지 않는다.)
 
 ### E. Phase 마감 (Baseline)
 

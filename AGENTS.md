@@ -20,7 +20,7 @@ Claude Code, Antigravity CLI (agy), Kimi Code CLI에서도 이 파일 내용을 
 - 한 번에 하나의 step만 진행한다.
 - 완료 기준은 "사용자 만족"이 아니라 step에 적힌 Acceptance Criteria 통과 여부다.
 - step 실행 중 무한 개선 루프를 돌리지 않는다.
-- 한 step은 최대 3회까지만 재시도한다.
+- 한 step은 최대 3회까지만 재시도한다. (재시도 = AC가 지목한 결함을 고쳐 산출물을 재작성하는 것. 단순 재실행이 아니다.)
 - 후속 step은 이전 구현 전체가 아니라 `baseline`, `module-map`, public contract를 우선 읽는다.
 - 품질이나 AC 때문에 이전 구현 확인이 필요하면 영향 모듈만 targeted read 한다.
 
