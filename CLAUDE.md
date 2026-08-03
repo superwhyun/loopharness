@@ -15,5 +15,4 @@ Claude Code에서는 아래 순서로 사용한다.
 - `/harness`
 - `/review`
 
-배치 실행기 `skills/harness/framework/scripts/execute.py` 는 선택 사항이다.
-기본 사용 방식은 Claude Code가 설치된 harness 스킬을 자동 로드한 상태에서 인터랙티브하게 작업하는 것이다.
+기본 사용 방식은 Claude Code가 설치된 harness 스킬을 자동 로드한 상태에서 인터랙티브하게 작업하는 것이다. 별도 헤드리스 배치 실행기는 없다.

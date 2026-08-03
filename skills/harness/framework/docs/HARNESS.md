@@ -65,7 +65,7 @@ python3 scripts/scaffold_phase.py {phase-dir} --project {name} --steps step1 ste
 8. 현재 step을 막는 외부 contract/모듈 문제가 발견되면 현재 step을 `blocked`로 기록하고 `blocking-fix` 또는 `contract-change` step을 append한다.
 9. 현재 step을 막지 않는 개선사항은 phase 마지막에 `backlog-fix` step으로 append한다.
 10. 기존 step 번호는 재정렬하지 않는다. 새 step은 항상 append한다.
-11. **phase 목록과 step 구성 초안은 확정 전에 반드시 3회 반복 자가검증을 거친다.** `/harness`, `/loop`, 배치 실행(`loop.py`) 등 진입 경로와 무관하게 phase/step을 설계하는 모든 경우에 적용한다.
+11. **phase 목록과 step 구성 초안은 확정 전에 반드시 3회 반복 자가검증을 거친다.** `/harness`, `/loop` 등 진입 경로와 무관하게 phase/step을 설계하는 모든 경우에 적용한다.
     - 회차별로 아래 질문에 실제로 답하면서 산출물 파일(phase 목록, `stepN.md`)을 직접 고쳐 쓴다. 판정("통과/불합격")을 묻는 것이 아니라 매 회차 무조건 재작성한다.
       - **1회차 — "빠진 것 없어?"**: 누락된 요구사항, 엣지 케이스, 모듈/의존성이 없는지 점검하고 채운다.
       - **2회차 — "완벽한 것 같아?"**: AC가 측정 가능한 명령으로 구체화됐는지, `owned_paths`/`read_contracts`/`forbidden_paths`가 정합적인지 점검하고 다듬는다.
@@ -91,7 +91,7 @@ python3 scripts/scaffold_phase.py {phase-dir} --project {name} --steps step1 ste
 
 `/loop` 자율 루프에서는 phase의 모든 step이 완료된 뒤, 마감 전에 `LOOP.md`의 "2.5단계 — Phase 리뷰 게이트"를 통과해야 한다 (findings를 사람 개입 없이 최대 3회 자동 수정, 남으면 known issues로 기록).
 
-phase 종료 시에는 다음 phase가 전체 구현을 다시 읽지 않도록 `phases/baselines/{phase-dir}.json`에 아래를 남긴다. 배치 실행기는 최소 baseline skeleton을 자동 생성하며, 에이전트는 필요한 경우 내용을 더 풍부하게 보강한다.
+phase 종료 시에는 다음 phase가 전체 구현을 다시 읽지 않도록 `phases/baselines/{phase-dir}.json`에 에이전트가 직접 아래를 남긴다.
 - 완료 tag
 - 모듈 목록과 public surface
 - shared contracts
@@ -157,12 +157,10 @@ git tag {project}-phase{N}-done
 
 | 모드 | 진입점 | 사용 상황 |
 |------|--------|-----------|
-| 인터랙티브 루프 | `/loop` (이 커맨드) | Claude Code, OpenCode, Codex, Gemini 등 AI 에이전트 |
-| 배치 헤드리스 루프 | `python3 scripts/loop.py` | 에이전트 없이 로컬 LLM만으로 자동 실행 |
-| 단일 phase 실행 | `/harness` 또는 `scripts/execute.py` | 사람이 단계별로 확인하며 진행 |
+| 인터랙티브 루프 | `/loop` (`LOOP.md`) | 여러 phase를 이어서 자동 진행 |
+| 단일 phase 실행 | `/harness` | 사람이 단계별로 확인하며 진행 |
 
-로컬 LLM(원격 IP) 연결은 `config.json`의 `local_api` 타입 백엔드로 설정한다.
-OpenCode, Cursor 등 에이전트 IDE에서 로컬 LLM을 연결하면 `/loop` 커맨드를 그대로 사용할 수 있다.
+두 모드 모두 인터랙티브 에이전트 세션에서 직접 오케스트레이션한다. 별도 헤드리스 배치 실행기는 없다.
 
 ### 설계 강제 반복 개선 (적용 단위 명확화)
 
@@ -174,7 +172,7 @@ phase/step 설계의 3회 반복 자가검증 규칙 본문은 **섹션 C(Step �
 
 즉, phase가 여러 개면 **각 phase의 step을 각각 3회씩** 재점검해야 한다. step 수준 재작성이 끝나기 전에 해당 phase를 "완료"로 취급하지 않는다.
 
-`scripts/loop.py`의 Planner, `/loop` 에이전트 워크플로우, `/harness` 단일 phase 실행, SKILL.md 기반 진입(Codex/Kimi 등) 모두 이 규칙을 동일하게 따른다 — 진입 경로에 따라 규칙이 달라지지 않는다.
+`/loop` 에이전트 워크플로우, `/harness` 단일 phase 실행, SKILL.md 기반 진입(Codex/Kimi 등) 모두 이 규칙을 동일하게 따른다 — 진입 경로에 따라 규칙이 달라지지 않는다.
 
 ## CRITICAL: phases/ 보호 규칙
 

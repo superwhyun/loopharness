@@ -7,17 +7,17 @@
     "frozen_after_completion": true,
     "default_read_order": [
       "baseline",
-      "registry",
-      "module-doc",
       "current-step",
       "targeted-implementation-only-if-needed"
     ]
   },
   "modules": [
     {
-      "ref": "docs/modules/{{first_step_name}}/MODULE.md",
+      "name": "{{first_step_name}}",
       "owner_steps": [0],
-      "phase_status": "planned"
+      "owned_paths": ["{replace-with-{{first_step_name}}-owned-paths}"],
+      "contracts": ["{replace-with-{{first_step_name}}-public-contracts}"],
+      "dependencies": []
     }
   ],
   "integration_points": [],

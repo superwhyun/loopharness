@@ -191,20 +191,7 @@ python3 ~/.claude/skills/harness/framework/scripts/scaffold_phase.py {phase-dir}
 python3 ~/.claude/skills/harness/framework/scripts/validate_phase.py {phase-dir} --root {대상 프로젝트 경로}
 ```
 
-### 3. 백엔드 스모크 테스트 (`smoke_backends.py`)
-로컬 컴퓨터에 설치된 백엔드 CLI 툴(Claude, Gemini, Kimi 등)의 인터페이스 및 도움말 명세가 하네스 연동 규격에 맞는지 확인합니다.
-```bash
-python3 ~/.claude/skills/harness/framework/scripts/smoke_backends.py
-```
-
-### 4. 배치 비대화식 실행기 (`execute.py`)
-CI/CD 자동화 환경이나 로컬 배치 테스트 시 백엔드를 일괄 구동합니다. 일반적인 대화식 작업에서는 사용이 권장되지 않습니다.
-```bash
-python3 ~/.claude/skills/harness/framework/scripts/execute.py 0-mvp --backend agy --root {대상 프로젝트 경로}
-```
-
-> [!TIP]
-> 하네스는 안전을 위해 보수적인 권한 모드로 동작합니다. CI/CD 등 자동화 환경에서 모든 권한 승인을 스킵하는 YOLO 모드를 실행하려면 `config.json`에 `"dangerous_mode": true` 설정을 명시해야 합니다.
+이 저장소는 인터랙티브 에이전트 세션에서만 동작합니다 — 별도 헤드리스 배치 실행기나 백엔드 CLI 추상화는 없습니다.
 
 ---
 
@@ -220,15 +207,13 @@ python3 ~/.claude/skills/harness/framework/scripts/execute.py 0-mvp --backend ag
 └── skills/harness/
     ├── SKILL.md              # 스킬 진입점 (Claude Code / Kimi 공용)
     └── framework/             # 번들 프레임워크 — 실제 배포되는 원본
-        ├── config.json        # 백엔드 및 보안 옵션 설정
         ├── docs/               # 프레임워크 표준 지침 문서
         │   ├── HARNESS.md      # 하네스 스텝 및 세션 라이프사이클 명세
         │   ├── LOOP.md         # 자율 개발 루프(Plan→Execute→Evaluate) 워크플로우
         │   ├── REVIEW.md       # 코드 품질 및 아키텍처 리뷰 표준 가이드
         │   ├── ARCHITECTURE.md # 프레임워크 및 데이터 흐름 아키텍처
         │   └── ADR.md          # 아키텍처 주요 결정 이력
-        ├── engine/             # 하네스 실행 엔진 (executor, backends, loop 컴포넌트)
-        ├── scripts/            # 하네스 자동화 및 유틸리티 스크립트
+        ├── scripts/            # phase/step 스캐폴드·검증 유틸리티 (scaffold_phase.py, validate_phase.py 등)
         └── templates/          # scaffold 표준 마크다운 템플릿 소스
 
 대상-프로젝트/                 # 하네스 스킬로 작업하는 실제 프로젝트 (별도 디렉터리)

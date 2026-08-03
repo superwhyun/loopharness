@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from scripts.phase_utils import scaffold_phase
-from engine.project_context import resolve_project_root
+from scripts.project_context import resolve_project_root
 
 
 def main():

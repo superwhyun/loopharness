@@ -6,7 +6,7 @@ description: Run the autonomous Plan → Execute → Evaluate development loop a
 # Harness Development Loop
 
 하네스 프레임워크에 따라 프로젝트를 개발/설계한다. **이 스킬 폴더 안에 실제 프레임워크
-복사본이 들어 있다** — `framework/` 아래 `engine/`, `scripts/`, `templates/`, `docs/`.
+복사본이 들어 있다** — `framework/` 아래 `scripts/`, `templates/`, `docs/`.
 다른 프로젝트에서 이 스킬을 써도 이 번들 프레임워크를 그대로 활용한다.
 
 > 번들 프레임워크 루트 = 베이스(스킬) 디렉터리 아래 `framework/`.
@@ -14,7 +14,7 @@ description: Run the autonomous Plan → Execute → Evaluate development loop a
 
 ## 0. 부트스트랩 — phases/ 구조 설계/생성
 
-사용자가 "하네스 프레임워크에 따라 설계해줘"라고 하고 대상 프로젝트에 `phases/`가 없으면 먼저 구조를 만든다. 대상 프로젝트에 자체 `scripts/`·`engine/`가 있으면 그걸 우선, 없으면 번들 프레임워크를 쓴다.
+사용자가 "하네스 프레임워크에 따라 설계해줘"라고 하고 대상 프로젝트에 `phases/`가 없으면 먼저 구조를 만든다. 대상 프로젝트에 자체 `scripts/`가 있으면 그걸 우선, 없으면 번들 프레임워크를 쓴다.
 
 1. **목표 명세** `goal.json` 생성 (없으면) — `goal`, `success_criteria[]`, `auto_checks[]`(예: `npm test`), `max_phases`, `stagnation_limit`. 사용자와 협의해 확정.
 2. **phase 스캐폴드**: 번들 스크립트를 대상 프로젝트 루트에서 실행
@@ -24,14 +24,13 @@ description: Run the autonomous Plan → Execute → Evaluate development loop a
    (또는 위 절차에 따라 `phases/index.json`, `phases/{task}/index.json`, `module-map.json`, `stepN.md` 생성)
 3. `phases/baselines/` 디렉터리 생성.
 4. **git 초기화**(없을 때만 `git init` 1회) 후 첫 커밋 전에 `.gitignore` 작성.
-5. 모듈-페르소나가 있으면 `docs/modules/registry.json` + 각 모듈 `MODULE.md` 초안(번들 `templates/` 사용).
-6. 생성 후 형식 검증:
+5. 생성 후 형식 검증:
    ```bash
    python <framework>/scripts/validate_phase.py {phase-dir}
    ```
    단, `--root`가 대상 프로젝트 루트를 가리키도록 지정.
 
-*스캐폴드 템플릿·MODULE.md 포맷의 진본은 번들 `framework/templates/` 및 `framework/docs/MODULES.md`에 있다.*
+*스캐폴드 템플릿의 진본은 번들 `framework/templates/`에 있다.*
 
 ## 1. 상태 확인
 
@@ -75,14 +74,7 @@ description: Run the autonomous Plan → Execute → Evaluate development loop a
 
 ## 자율 루프 (여러 phase 연속 진행)
 
-사용자가 여러 phase를 이어서 자동으로 진행해 달라고 하면(`/loop` 유무와 무관하게) `framework/docs/LOOP.md`의 목표 확정 → 반복 → 평가 절차를 따른다.
-
-## 배치 실행 (헤드리스)
-
-번들 프레임워크로 헤드리스 자동 루프를 돌릴 수 있다:
-```bash
-python <framework>/scripts/loop.py --root {대상 프로젝트 루트} --goal goal.json --backend <name>
-```
+사용자가 여러 phase를 이어서 자동으로 진행해 달라고 하면(`/loop` 유무와 무관하게) `framework/docs/LOOP.md`의 목표 확정 → 반복 → 평가 절차를 따른다. 이 워크플로우는 인터랙티브 에이전트가 직접 오케스트레이션하며, 별도 헤드리스 배치 실행기는 없다.
 
 ## 금지사항
 

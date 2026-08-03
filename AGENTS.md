@@ -32,13 +32,11 @@ Claude Code, Antigravity CLI (agy), Kimi Code CLI에서도 이 파일 내용을 
 1. `AGENTS.md`
 2. `skills/harness/framework/docs/HARNESS.md`
 3. `skills/harness/framework/docs/ARCHITECTURE.md`
-4. `docs/modules/registry.json` (대상 프로젝트에 있으면) — 현재 모듈 상태 파악
-5. `skills/harness/framework/docs/ADR.md`
-6. `phases/project-manifest.json` (대상 프로젝트에 있으면) — 전체 프로젝트 누적 현황
-7. 현재 phase의 `phases/{task}/index.json`
-8. 현재 phase의 `phases/{task}/module-map.json` (있으면)
-9. `docs/modules/{해당 모듈}/MODULE.md` — module-map의 ref 확인 후 해당 모듈만
-10. 현재 step의 `phases/{task}/stepN.md`
+4. `skills/harness/framework/docs/ADR.md`
+5. `phases/project-manifest.json` (대상 프로젝트에 있으면) — 전체 프로젝트 누적 현황
+6. 현재 phase의 `phases/{task}/index.json`
+7. 현재 phase의 `phases/{task}/module-map.json` (있으면)
+8. 현재 step의 `phases/{task}/stepN.md`
 
 ## 인터랙티브 사용 방식
 
@@ -46,7 +44,7 @@ Claude Code, Antigravity CLI (agy), Kimi Code CLI에서도 이 파일 내용을 
 
 - Claude Code / Kimi Code CLI / Codex / Antigravity (agy·AGY CLI·AGY IDE): 이 저장소를 `~/.agents/skills/harness`에 clone하고 `install.sh`를 실행하면 `~/.claude/skills/harness`, `~/.kimi/skills/harness`, `~/.codex/skills/harness`, `~/.gemini/config/skills/harness`가 그 클론의 `skills/harness/`로 심볼릭 링크된다. 어떤 프로젝트 디렉터리에서 열어도 스킬이 자동 로드된다. canonical 내용은 `skills/harness/SKILL.md`와 `skills/harness/framework/docs/HARNESS.md`다. (`~/.gemini/config/skills/`는 agy/AGY CLI/AGY IDE 세 변형 모두가 공통으로 인식하는 것으로 실측 확인된 전역 스킬 경로다.)
 
-이 저장소 자체는 프레임워크 소스이며 `phases/`를 갖는 프로젝트 인스턴스가 아니다. `skills/harness/framework/scripts/execute.py`는 배치형 실행기일 뿐, 인터랙티브 사용에서 매번 직접 실행해야 하는 필수 진입점이 아니다.
+이 저장소 자체는 프레임워크 소스이며 `phases/`를 갖는 프로젝트 인스턴스가 아니다. 인터랙티브 에이전트(Claude Code, Codex, Kimi, Antigravity 등)가 `HARNESS.md`/`LOOP.md`를 직접 읽고 phase/step을 오케스트레이션하는 것이 유일한 실행 경로다.
 
 ## Harness 워크플로우
 
@@ -122,43 +120,6 @@ git tag {project}-phase{N}-done
 ```
 
 자세한 내용은 `skills/harness/framework/docs/HARNESS.md`의 "F. Git 커밋" 섹션을 참조한다.
-
-## 모듈 페르소나 규칙
-
-모듈-페르소나 레이어에 대한 상세 규약은 `skills/harness/framework/docs/MODULES.md`를 참조한다.
-
-### 핵심 원칙
-
-- `docs/modules/registry.json`은 전체 모듈 상태의 단일 진실 공급원(SSOT)이다.
-- 각 모듈의 페르소나와 컨트랙트는 `docs/modules/{id}/MODULE.md`에 정의된다.
-- 자기 모듈의 MODULE.md만 수정한다. 타 모듈 MODULE.md는 읽기만 한다.
-- `phases/{task}/module-map.json`은 MODULE.md를 `ref`로 참조하며 phase-specific 정보만 담는다.
-
-### step 유형별 역할
-
-- **bootstrap step (phase 최초 step0)**: `docs/modules/` 구조 생성, registry.json 초기화, MODULE.md 초안 작성
-- **contract-negotiation step (변경 시 step0)**: MODULE.md contract 수정, registry status 업데이트, downstream 영향 확인
-- **구현 step**: 해당 모듈 페르소나로 작동, owned_paths 내 구현, MODULE.md version bump, registry 업데이트
-- **통합 검증 step**: registry 전체 healthy 확인, docs/ARCHITECTURE.md 업데이트
-
-### docs/ 동기화 의무
-
-구현 step 완료 시 반드시 아래를 수행한다.
-
-- `docs/modules/{id}/MODULE.md` contract를 구현과 일치시킨다
-- `docs/modules/registry.json`의 version과 status를 최신으로 유지한다
-- 시스템 흐름이 바뀌면 `docs/ARCHITECTURE.md` 관련 섹션을 업데이트한다
-
-### 스캐폴드 명령
-
-```bash
-# 새 모듈 생성
-python3 skills/harness/framework/scripts/scaffold_module.py auth/token \
-  --project my-app \
-  --persona "Token Manager" \
-  --parent auth \
-  --root {대상 프로젝트 경로}
-```
 
 ## 상태 파일 규칙
 

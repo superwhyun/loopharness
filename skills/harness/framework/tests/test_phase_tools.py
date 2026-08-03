@@ -6,8 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from scripts.phase_utils import scaffold_phase, validate_phase_bundle
-from engine.project_context import resolve_project_root
-from engine.manifest import update_project_manifest
+from scripts.project_context import resolve_project_root
 
 
 def _write_step_template(template_root: Path, body: str = "설명"):
@@ -62,11 +61,12 @@ def test_scaffold_phase_creates_valid_bundle(tmp_path):
     module_map = json.loads((tmp_path / "phases" / "0-mvp" / "module-map.json").read_text(encoding="utf-8"))
     modules = module_map["modules"]
     assert len(modules) == 2
-    # First module from template (legacy format with name)
+    # First module from template
     assert modules[0]["name"] == "project-setup"
-    # Second module auto-generated (thin format with ref)
-    assert modules[1]["ref"] == "docs/modules/api-layer/MODULE.md"
-    assert modules[1]["phase_status"] == "planned"
+    # Second module auto-generated as a placeholder stub
+    assert modules[1]["name"] == "api-layer"
+    assert modules[1]["owned_paths"] == ["{replace-with-api-layer-owned-paths}"]
+    assert modules[1]["contracts"] == ["{replace-with-api-layer-public-contracts}"]
 
 
 def test_validate_catches_unfilled_placeholder_in_owned_paths(tmp_path):
@@ -227,96 +227,3 @@ def test_resolve_project_root_uses_explicit_root(tmp_path):
     explicit = tmp_path / "custom"
     explicit.mkdir()
     assert resolve_project_root(tmp_path, str(explicit)) == explicit.resolve()
-
-
-def _make_baseline(project: str, phase: str, **kwargs) -> dict:
-    base = {
-        "project": project,
-        "phase": phase,
-        "tag": f"{project}-{phase}-done",
-        "modules": [],
-        "routes": [],
-        "shared_contracts": [],
-        "integration_points": [],
-        "known_issues": [],
-        "completed_at": "2026-01-01T00:00:00+0900",
-    }
-    base.update(kwargs)
-    return base
-
-
-def test_project_manifest_created_on_first_phase(tmp_path):
-    phases_dir = tmp_path / "phases"
-    phases_dir.mkdir()
-    baseline = _make_baseline(
-        "demo", "0-setup",
-        modules=[{"name": "auth", "purpose": "JWT 인증", "owned_paths": ["src/auth/**"], "contracts": ["src/contracts/auth.ts"]}],
-        routes=[{"method": "POST", "path": "/api/login", "purpose": "로그인"}],
-        shared_contracts=[{"path": "src/contracts/user.ts", "purpose": "User 타입"}],
-        integration_points=[{"name": "postgres", "type": "database", "purpose": "주 DB"}],
-    )
-
-    update_project_manifest(phases_dir, "0-setup", baseline)
-
-    manifest = json.loads((phases_dir / "project-manifest.json").read_text(encoding="utf-8"))
-    assert len(manifest["modules"]) == 1
-    assert manifest["modules"][0]["name"] == "auth"
-    assert manifest["modules"][0]["phase"] == "0-setup"
-    assert len(manifest["routes"]) == 1
-    assert len(manifest["shared_contracts"]) == 1
-    assert len(manifest["integration_points"]) == 1
-    assert len(manifest["phase_history"]) == 1
-    assert manifest["phase_history"][0]["tag"] == "demo-0-setup-done"
-
-
-def test_project_manifest_accumulates_across_phases(tmp_path):
-    phases_dir = tmp_path / "phases"
-    phases_dir.mkdir()
-
-    update_project_manifest(phases_dir, "0-setup", _make_baseline(
-        "demo", "0-setup",
-        modules=[{"name": "auth", "purpose": "JWT", "owned_paths": ["src/auth/**"], "contracts": ["src/contracts/auth.ts"]}],
-        routes=[{"method": "POST", "path": "/api/login", "purpose": "로그인"}],
-    ))
-    update_project_manifest(phases_dir, "1-feature", _make_baseline(
-        "demo", "1-feature",
-        modules=[{"name": "post", "purpose": "게시글", "owned_paths": ["src/post/**"], "contracts": ["src/contracts/post.ts"]}],
-        routes=[{"method": "GET", "path": "/api/posts", "purpose": "목록 조회"}],
-    ))
-
-    manifest = json.loads((phases_dir / "project-manifest.json").read_text(encoding="utf-8"))
-    assert len(manifest["modules"]) == 2
-    assert {m["name"] for m in manifest["modules"]} == {"auth", "post"}
-    assert len(manifest["routes"]) == 2
-    assert len(manifest["phase_history"]) == 2
-
-
-def test_project_manifest_deduplicates_routes(tmp_path):
-    phases_dir = tmp_path / "phases"
-    phases_dir.mkdir()
-
-    route = {"method": "POST", "path": "/api/login", "purpose": "로그인"}
-    update_project_manifest(phases_dir, "0-setup", _make_baseline("demo", "0-setup", routes=[route]))
-    update_project_manifest(phases_dir, "1-fix", _make_baseline("demo", "1-fix", routes=[route]))
-
-    manifest = json.loads((phases_dir / "project-manifest.json").read_text(encoding="utf-8"))
-    assert len(manifest["routes"]) == 1
-
-
-def test_project_manifest_updates_module_on_same_name(tmp_path):
-    phases_dir = tmp_path / "phases"
-    phases_dir.mkdir()
-
-    update_project_manifest(phases_dir, "0-setup", _make_baseline(
-        "demo", "0-setup",
-        modules=[{"name": "auth", "purpose": "기본 인증", "owned_paths": ["src/auth/**"], "contracts": []}],
-    ))
-    update_project_manifest(phases_dir, "1-refactor", _make_baseline(
-        "demo", "1-refactor",
-        modules=[{"name": "auth", "purpose": "JWT + OAuth", "owned_paths": ["src/auth/**"], "contracts": ["src/contracts/auth.ts"]}],
-    ))
-
-    manifest = json.loads((phases_dir / "project-manifest.json").read_text(encoding="utf-8"))
-    assert len(manifest["modules"]) == 1
-    assert manifest["modules"][0]["purpose"] == "JWT + OAuth"
-    assert manifest["modules"][0]["phase"] == "1-refactor"

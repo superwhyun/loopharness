@@ -56,9 +56,11 @@ def render_template(template: str, values: dict[str, str]) -> str:
 
 def default_module_entry(step_name: str, step_index: int) -> dict:
     return {
-        "ref": f"docs/modules/{step_name}/MODULE.md",
+        "name": step_name,
         "owner_steps": [step_index],
-        "phase_status": "planned",
+        "owned_paths": [f"{{replace-with-{step_name}-owned-paths}}"],
+        "contracts": [f"{{replace-with-{step_name}-public-contracts}}"],
+        "dependencies": [],
     }
 
 
@@ -266,14 +268,6 @@ def _validate_module_map(module_map_path: Path, errors: list[str]) -> None:
         if not isinstance(owner_steps, list) or not owner_steps or not all(isinstance(item, int) for item in owner_steps):
             errors.append(f"{module_map_path} module {index} owner_steps must be a non-empty integer array")
 
-        # Thin format: ref + phase_status (new)
-        if "ref" in module:
-            ref = module.get("ref")
-            if not isinstance(ref, str) or not ref:
-                errors.append(f"{module_map_path} module {index} ref must be a non-empty string")
-            continue
-
-        # Legacy format: name + owned_paths + contracts + dependencies
         name = module.get("name")
         if not isinstance(name, str) or not STEP_NAME_PATTERN.fullmatch(name):
             errors.append(f"{module_map_path} module {index} name must be kebab-case")

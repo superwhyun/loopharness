@@ -1,8 +1,7 @@
 # 자율 개발 루프 (Loop Engineering)
 
 이 문서는 이 저장소의 자율 루프 워크플로우 원문이다.
-AI 에이전트(Claude Code, Codex, Kimi Code CLI, OpenCode, Gemini 등)가 루프를 직접 오케스트레이션할 때 이 문서를 기준으로 작업한다.
-`scripts/loop.py`는 에이전트 없이 완전 배치 실행할 때만 사용한다.
+AI 에이전트(Claude Code, Codex, Kimi Code CLI, Antigravity 등)가 루프를 직접 오케스트레이션할 때 이 문서를 기준으로 작업한다. 별도 헤드리스 배치 실행기는 없다 — 인터랙티브 에이전트 세션에서만 이 워크플로우를 사용한다.
 
 **사람 개입 지점은 Phase 0(목표 확정) 단 한 번뿐이다.** `goal.json`이 확정된 이후에는 phase 결정 → step 실행 → phase 리뷰 게이트(2.5단계) → 평가를 사람 승인 없이 반복하며, `stagnated`로 막히는 경우에만 사람에게 알린다.
 
@@ -70,18 +69,9 @@ AI 에이전트(Claude Code, Codex, Kimi Code CLI, OpenCode, Gemini 등)가 루�
 
 ### 2단계 — Phase 실행
 
-두 가지 방법 중 선택한다:
+에이전트가 `HARNESS.md` 섹션 D (실행)의 규칙을 따라 step을 하나씩 직접 수행한다.
 
-**방법 A — 배치 실행 (권장, 빠름)**
-```bash
-python3 skills/harness/framework/scripts/execute.py {phase-dir} --root {project-root}
-```
-execute.py가 step을 순차 실행하고 자가 교정한다. 완료 후 결과를 요약한다.
-
-**방법 B — 직접 실행 (상세 제어가 필요할 때)**
-`HARNESS.md` 섹션 D (실행)의 규칙을 따라 step을 하나씩 직접 수행한다.
-
-**실행 루프 규칙 (방법 A·B 공통):**
+**실행 루프 규칙:**
 - 각 step은 산출물을 작성한 뒤 **step의 AC 전체를 검증**한다.
 - AC를 모두 통과하면 그 step을 `completed`로 만들고 다음 step으로 간다.
 - AC를 통과하지 못하면 **단순 재실행이 아니라 AC가 지목한 결함 항목을 고쳐 산출물을 재작성**한 뒤 다시 AC를 검증한다.
@@ -133,10 +123,3 @@ phase 리뷰 게이트를 통과한 뒤, 에이전트가 직접 판정한다:
 다음 단계 제안: [있으면]
 ```
 
----
-
-## 로컬 LLM (OpenCode) 사용 시
-
-OpenCode에 로컬 LLM을 연결한 상태라면 이 워크플로우를 그대로 사용할 수 있다.
-배치 헤드리스 실행이 필요할 때는 `python3 skills/harness/framework/scripts/loop.py --backend {llm-name}` 을 사용한다.
-`config.json`의 `local_api` 타입 백엔드 설정 방법은 `ARCHITECTURE.md` 참고.
